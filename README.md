@@ -122,3 +122,11 @@ python cs285/scripts/run_hw2.py --env_name HalfCheetah-v4 -n 100 -b 5000 -rtg --
 #### lamda 1
 
 <img src="hw2/images/experiment11_lamda_1_average_return_plot.png" width="600px">
+
+
+### Task4
+
+##### Environment4:
+<img src="hw2/images/humanoid.png" width="600px">
+
+<img src="hw2/images/networks_humanoid.png" width="600px">
