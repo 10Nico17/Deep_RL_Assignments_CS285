@@ -1,9 +1,8 @@
-Source of Exercises: Berkeley CS 285: Deep Reinforcement Learning, Decision Making, and Control
+#### Source of Exercises: Berkeley CS 285: Deep Reinforcement Learning, Decision Making, and Control
 
-### Homework 2:
+## Homework 2:
 
-
-##### Environment:
+##### Environment1:
 <img src="hw2/images/env1.png" alt="Environment 1" width="600px">
 
 ##### Reward-to-go:
@@ -17,10 +16,10 @@ Source of Exercises: Berkeley CS 285: Deep Reinforcement Learning, Decision Maki
 
 #### Implementation:
 
-#### Policy
+#### 1. Policy Gradients
 <img src="hw2/images/policy.png" alt="Policy" width="600px">
 
-#### create action distribution
+#### sample action from prob. distr. 
 <img src="hw2/images/action_distr.png" alt="Policy" width="600px">
 
 
@@ -32,7 +31,8 @@ Source of Exercises: Berkeley CS 285: Deep Reinforcement Learning, Decision Maki
         A batch size of 1 means that an update is made after each individual state-action pair. 
         Typically, larger values are used for more stable learning.
 
-#### Task1, 100 iterations/episodes: 
+
+## Task1, 100 iterations/episodes: 
 #### no critic use q-values, no reward-to-go
 python cs285/scripts/run_hw2.py --env_name CartPole-v0 -n 100 -b 1000 --exp_name experiment1
 
@@ -80,3 +80,26 @@ python cs285/scripts/run_hw2.py --env_name CartPole-v0 -n 100 -b 4000 -rtg -na -
 <img src="hw2/images/experiment8.png" width="600px">
 
 
+### Task2, Using a Neural Network Baseline
+
+##### Environment2:
+
+<img src="hw2/images/etask2.png" width="600px">
+
+### Continous, new env
+
+#### no critic use q-values, reward-to-go, batch_size 5000
+python cs285/scripts/run_hw2.py --env_name HalfCheetah-v4 -n 100 -b 5000 -rtg --discount 0.95 -lr 0.01 --exp_name experiment9
+
+<img src="hw2/images/experiment9.png" width="600px">
+
+
+#### with critic NN (Baseline), reward-to-go, batch_size 5000
+
+
+<img src="hw2/images/actor_critic.png" width="600px">
+
+python cs285/scripts/run_hw2.py --env_name HalfCheetah-v4 -n 100 -b 5000 -rtg --discount 0.95 -lr 0.01 --use_baseline -blr 0.01 -bgs 5 
+--exp_name experiment10
+
+<img src="hw2/images/experiment10.png" width="600px">
