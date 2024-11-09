@@ -46,15 +46,14 @@ class ValueCritic(nn.Module):
     def update(self, obs: np.ndarray, q_values: np.ndarray) -> dict:
         obs = ptu.from_numpy(obs)
         q_values = ptu.from_numpy(q_values)
-        print('Update critic')
-        
+        #print('Update critic')        
         # TODO: update the critic using the observations and q_values
         predicted_values = self.forward(obs)
-        loss = F.mse_loss(predicted_values, q_values)
+        #loss = F.mse_loss(predicted_values, q_values)
+        loss = F.mse_loss(predicted_values, q_values.view(-1, 1))  # Reshape q_values to match predicted_values
         self.optimizer.zero_grad()
         loss.backward()
         self.optimizer.step()
-
         return {
             "Baseline Loss": ptu.to_numpy(loss),
         }

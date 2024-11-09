@@ -90,11 +90,23 @@ class PGAgent(nn.Module):
         # step 4: if needed, use all datapoints (s_t, a_t, q_t) to update the PG critic/baseline
         if self.critic is not None:
             print("Update the critic")
-            # TODO: perform `self.baseline_gradient_steps` updates to the critic/baseline network
-            critic_info: dict = None
-            info.update(critic_info)
+            critic_info = {}
+            for _ in range(self.baseline_gradient_steps):
+                # Führe das Update durch und sammle die Rückgabewerte für jedes Schritt
+                step_info = self.critic.update(obs, q_values)
+
+                # Aktualisiere die gesammelten Informationen
+                for key, value in step_info.items():
+                    if key not in critic_info:
+                        critic_info[key] = []
+                    critic_info[key].append(value)
+
+            # Füge die durchschnittlichen Werte über alle Schritte zum `info`-Dictionary hinzu
+            for key, values in critic_info.items():
+                info[f"Critic {key}"] = np.mean(values)
 
         return info
+
 
     """
     Trajectory-Based Policy Gradient (Gesamtsumme aller Belohnungen für die gesamte Trajektorie)
@@ -124,8 +136,6 @@ class PGAgent(nn.Module):
         return q_values
 
 
-
-
     def _estimate_advantage(
         self,
         obs: np.ndarray,
@@ -146,34 +156,34 @@ class PGAgent(nn.Module):
             
             # Falls ein Kritiker vorhanden ist, berechne die Wertschätzungen für obs und ziehe diese von den Q-Werten ab
             print('Use neural network as critic')
-            values = self.critic(obs)
-            print('values: ', values)
-            values = values.squeeze()            
-            
+            obs_tensor = ptu.from_numpy(obs)  # Conversion to torch.Tensor
+            values = self.critic(obs_tensor).squeeze() 
+           
             assert values.shape == q_values.shape
 
             if self.gae_lambda is None:
                 print('No gae_lambda used, only critic NN')
                 # TODO: if using a baseline, but not GAE, what are the advantages?
-                advantages = q_values - values
+                #advantages = q_values - values
+                advantages = q_values - values.detach().cpu().numpy()
                 #print('################## advantages1: ', advantages.shape)
 
             else:
-                print('Gae_lambda used')
-                # TODO: implement GAE
+                print('GAE_lambda used')                
                 batch_size = obs.shape[0]
+                # Add a dummy T+1 value to values for easier recursive calculation
+                values = np.append(values.detach().cpu().numpy(), [0])  # Detach, transfer to CPU, then convert to NumPy
+                advantages = np.zeros(batch_size + 1)  # Include dummy advantage value at the end for computation
 
-                # HINT: append a dummy T+1 value for simpler recursive calculation
-                values = np.append(values, [0])
-                advantages = np.zeros(batch_size + 1)
-
+                # Loop through the batch in reverse to compute GAE advantages
                 for i in reversed(range(batch_size)):
-                    # TODO: recursively compute advantage estimates starting from timestep T.
-                    # HINT: use terminals to handle edge cases. terminals[i] is 1 if the state is the last in its
-                    # trajectory, and 0 otherwise.
-                    pass
+                    # Calculate delta for time step i
+                    delta = rewards[i] + self.gamma * values[i + 1] * (1 - terminals[i]) - values[i]
 
-                # remove dummy advantage
+                    # Recursive GAE formula with λ to compute advantage estimates
+                    advantages[i] = delta + self.gamma * self.gae_lambda * (1 - terminals[i]) * advantages[i + 1]
+
+                # Remove the dummy advantage value at the end
                 advantages = advantages[:-1]
 
         # TODO: normalize the advantages to have a mean of zero and a standard deviation of one within the batch

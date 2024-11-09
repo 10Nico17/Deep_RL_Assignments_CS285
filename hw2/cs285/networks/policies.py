@@ -107,8 +107,8 @@ class MLPPolicy(nn.Module):
             # TODO: define the forward pass for a policy with a continuous action space.
             mean = self.mean_net(obs)
             std = torch.exp(self.logstd)
-            dist = distributions.Normal(mean, std)
-        return dist
+            action_dist = distributions.Normal(mean, std)
+        return action_dist
 
         
         
