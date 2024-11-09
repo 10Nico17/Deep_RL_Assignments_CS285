@@ -4,22 +4,24 @@ Runs behavior cloning and DAgger for homework 1
 Functions to edit:
     1. run_training_loop
 """
-
+import os
+import sys
+sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
 import pickle
 import os
 import time
 import gym
-
 import numpy as np
 import torch
 
 from cs285.infrastructure import pytorch_util as ptu
 from cs285.infrastructure import utils
-from cs285.infrastructure.logger import Logger
 from cs285.infrastructure.replay_buffer import ReplayBuffer
 from cs285.policies.MLP_policy import MLPPolicySL
 from cs285.policies.loaded_gaussian_policy import LoadedGaussianPolicy
 
+
+from cs285.infrastructure.logger import Logger
 
 # how many rollouts to save as videos to tensorboard
 MAX_NVIDEO = 2
@@ -42,7 +44,7 @@ def run_training_loop(params):
     #############
 
     # Get params, create logger, create TF session
-    logger = Logger(params['logdir'])
+    #logger = Logger(params['logdir'])
 
     # Set random seeds
     seed = params['seed']
@@ -54,8 +56,8 @@ def run_training_loop(params):
     )
 
     # Set logger attributes
-    log_video = True
-    log_metrics = True
+    #log_video = True
+    #log_metrics = True
 
     #############
     ## ENV
@@ -163,6 +165,8 @@ def run_training_loop(params):
           train_log = actor.update(ob_batch, ac_batch)
           training_logs.append(train_log)
 
+
+        
         # log/save
         print('\nBeginning logging procedure...')
         if log_video:
@@ -204,6 +208,7 @@ def run_training_loop(params):
         if params['save_params']:
             print('\nSaving agent params')
             actor.save('{}/policy_itr_{}.pt'.format(params['logdir'], itr))
+        
 
 
 def main():
