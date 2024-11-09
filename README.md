@@ -5,6 +5,13 @@ Source of Exercises: Berkeley CS 285: Deep Reinforcement Learning, Decision Maki
 
 ##### Environment Experiment1:
 ![Environment 1](hw2/images/env1.png)
-![Environment 2](hw2/images/env2.png)
-![Environment 3](hw2/images/env3.png)
 
+
+##### Reward-to-go:
+![Reward to go](hw2/images/reward_to_go.png)
+
+##### Baseline:
+![ Policy Gradient](hw2/images/baseline.png)
+
+##### Contonious:
+![Contonious](hw2/images/continous_action_space.png)
