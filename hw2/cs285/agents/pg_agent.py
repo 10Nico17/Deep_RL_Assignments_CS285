@@ -32,13 +32,17 @@ class PGAgent(nn.Module):
             ac_dim, ob_dim, discrete, n_layers, layer_size, learning_rate
         )
 
+        #print('self.actor (policy): ', self.actor)
+
         # create the critic (baseline) network, if needed
         if use_baseline:
+            print('create critic (baseline)')
             self.critic = ValueCritic(
                 ob_dim, n_layers, layer_size, baseline_learning_rate
             )
             self.baseline_gradient_steps = baseline_gradient_steps
         else:
+            print('no critic (baseline) used')
             self.critic = None
 
         # other agent parameters
@@ -61,8 +65,6 @@ class PGAgent(nn.Module):
         Each input is a list of NumPy arrays, where each array corresponds to a single trajectory. The batch size is the
         total number of samples across all trajectories (i.e. the sum of the lengths of all the arrays).
         """
-
-
         # step 1: calculate Q values of each (s_t, a_t) point, using rewards (r_0, ..., r_t, ..., r_T)
         q_values: Sequence[np.ndarray] = self._calculate_q_vals(rewards)
 
@@ -85,15 +87,11 @@ class PGAgent(nn.Module):
         # step 3: use all datapoints (s_t, a_t, adv_t) to update the PG actor/policy
         info = self.actor.update(obs, actions, advantages)
 
-
-
-
         # step 4: if needed, use all datapoints (s_t, a_t, q_t) to update the PG critic/baseline
         if self.critic is not None:
-            #print("Update the critic")
+            print("Update the critic")
             # TODO: perform `self.baseline_gradient_steps` updates to the critic/baseline network
             critic_info: dict = None
-
             info.update(critic_info)
 
         return info
@@ -112,11 +110,13 @@ class PGAgent(nn.Module):
             # trajectory at each point.
             # In other words: Q(s_t, a_t) = sum_{t'=0}^T gamma^t' r_{t'}
             # TODO: use the helper function self._discounted_return to calculate the Q-values
+            print('No use_reward_to_go')
             q_values = [self._discounted_return(reward_traj) for reward_traj in rewards]
         else:
             # Case 2: in reward-to-go PG, we only use the rewards after timestep t to estimate the Q-value for (s_t, a_t).
             # In other words: Q(s_t, a_t) = sum_{t'=t}^T gamma^(t'-t) * r_{t'}
             # TODO: use the helper function self._discounted_reward_to_go to calculate the Q-values
+            print('Use_reward_to_go')
             q_values = [self._discounted_reward_to_go(reward_traj) for reward_traj in rewards]
 
         return q_values
@@ -137,6 +137,7 @@ class PGAgent(nn.Module):
 
         if self.critic is None:
             # TODO: if no baseline, then what are the advantages?
+            print('no baseline use q-values')
             advantages = q_values.copy() 
         
         else:
@@ -168,7 +169,7 @@ class PGAgent(nn.Module):
 
         # TODO: normalize the advantages to have a mean of zero and a standard deviation of one within the batch
         if self.normalize_advantages:
-            #print("Normalize advantage")
+            print("Normalize advantage")
             advantages = (advantages - advantages.mean()) / (advantages.std() + 1e-8)
 
         return advantages

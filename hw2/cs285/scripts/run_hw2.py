@@ -92,13 +92,13 @@ def run_training_loop(args):
         """
 
         trajs, envsteps_this_batch = utils.sample_trajectories(env, agent.actor, args.batch_size, max_ep_len)    
-        print('trajs: ', trajs)   
+        #print('trajs: ', trajs)   
         
         total_envsteps += envsteps_this_batch
         trajs_dict = {k: [traj[k] for traj in trajs] for k in trajs[0]}
         returns = [np.sum(traj["reward"]) for traj in trajs]
         avg_return = np.mean(returns)
-        print('avg_return: ', avg_return)
+        #print('avg_return: ', avg_return)
         avg_returns.append(avg_return)  
         
         
