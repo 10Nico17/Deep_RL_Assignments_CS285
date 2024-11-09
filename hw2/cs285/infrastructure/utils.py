@@ -33,8 +33,6 @@ def sample_trajectory(
             else:
                 print("Warning: No image returned from render.")
 
-        # TODO use the most recent ob and the policy to decide what to do
-
         ac: np.ndarray = policy.get_action(ob)
         next_ob, rew, terminated, truncated, info = env.step(ac)
         done = terminated or truncated
@@ -77,8 +75,6 @@ def sample_trajectories(
     
     #print("sample_trajectories function")
 
-
-    
     timesteps_this_batch = 0
     trajs = []
 

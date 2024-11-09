@@ -32,7 +32,7 @@ class PGAgent(nn.Module):
             ac_dim, ob_dim, discrete, n_layers, layer_size, learning_rate
         )
 
-        #print('self.actor (policy): ', self.actor)
+        print('self.actor (policy): ', self.actor)
 
         # create the critic (baseline) network, if needed
         if use_baseline:
@@ -103,8 +103,6 @@ class PGAgent(nn.Module):
 
     def _calculate_q_vals(self, rewards: Sequence[np.ndarray]) -> Sequence[np.ndarray]:
         """Monte Carlo estimation of the Q function."""
-
-        #print("rewards: ", rewards)
         if not self.use_reward_to_go:
             # Case 1: in trajectory-based PG, we ignore the timestep and instead use the discounted return for the entire
             # trajectory at each point.
@@ -112,12 +110,16 @@ class PGAgent(nn.Module):
             # TODO: use the helper function self._discounted_return to calculate the Q-values
             print('No use_reward_to_go')
             q_values = [self._discounted_return(reward_traj) for reward_traj in rewards]
+            #for i, q_value in enumerate(q_values):
+            #    print(f'q_values[{i}] shape:', q_value.shape)
         else:
             # Case 2: in reward-to-go PG, we only use the rewards after timestep t to estimate the Q-value for (s_t, a_t).
             # In other words: Q(s_t, a_t) = sum_{t'=t}^T gamma^(t'-t) * r_{t'}
             # TODO: use the helper function self._discounted_reward_to_go to calculate the Q-values
             print('Use_reward_to_go')
             q_values = [self._discounted_reward_to_go(reward_traj) for reward_traj in rewards]
+            #for i, q_value in enumerate(q_values):
+            #    print(f'q_values[{i}] shape:', q_value.shape)
 
         return q_values
 
@@ -139,18 +141,25 @@ class PGAgent(nn.Module):
             # TODO: if no baseline, then what are the advantages?
             print('no baseline use q-values')
             advantages = q_values.copy() 
-        
+            #print('################## advantages1: ', advantages.shape)
         else:
             
             # Falls ein Kritiker vorhanden ist, berechne die Wertschätzungen für obs und ziehe diese von den Q-Werten ab
-            # TODO: run the critic and use it as a baseline
-            values = None
+            print('Use neural network as critic')
+            values = self.critic(obs)
+            print('values: ', values)
+            values = values.squeeze()            
+            
             assert values.shape == q_values.shape
 
             if self.gae_lambda is None:
+                print('No gae_lambda used, only critic NN')
                 # TODO: if using a baseline, but not GAE, what are the advantages?
-                advantages = None
+                advantages = q_values - values
+                #print('################## advantages1: ', advantages.shape)
+
             else:
+                print('Gae_lambda used')
                 # TODO: implement GAE
                 batch_size = obs.shape[0]
 
@@ -187,7 +196,7 @@ class PGAgent(nn.Module):
         """
         T = len(rewards)
         discounts = np.array([self.gamma ** t for t in range(T)])
-        total_return = np.sum(rewards * discounts)  # Berechne die Gesamtrendite
+        total_return = np.sum(rewards * discounts)  
         return [total_return] * T
 
 

@@ -92,7 +92,18 @@ def run_training_loop(args):
         """
 
         trajs, envsteps_this_batch = utils.sample_trajectories(env, agent.actor, args.batch_size, max_ep_len)    
-        #print('trajs: ', trajs)   
+        
+        '''
+        for i, traj in enumerate(trajs):
+            observation_shape = traj["observation"].shape
+            action_shape = traj["action"].shape
+            reward_shape = traj["reward"].shape
+
+
+        print(f"  Observation shape: {observation_shape}")
+        print(f"  Action shape: {action_shape}")
+        print(f"  reward shape : {reward_shape}")
+        '''
         
         total_envsteps += envsteps_this_batch
         trajs_dict = {k: [traj[k] for traj in trajs] for k in trajs[0]}

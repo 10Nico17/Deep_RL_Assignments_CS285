@@ -34,18 +34,29 @@ class ValueCritic(nn.Module):
             learning_rate,
         )
 
+        # Netzwerkarchitektur ausgeben
+        print("Critic Network Architecture:")
+        print(self.network)
+
+
     def forward(self, obs: torch.Tensor) -> torch.Tensor:
         # TODO: implement the forward pass of the critic network
-        pass
-        
+        return self.network(obs)        
 
     def update(self, obs: np.ndarray, q_values: np.ndarray) -> dict:
         obs = ptu.from_numpy(obs)
         q_values = ptu.from_numpy(q_values)
-
+        print('Update critic')
+        
         # TODO: update the critic using the observations and q_values
-        loss = None
+        predicted_values = self.forward(obs)
+        loss = F.mse_loss(predicted_values, q_values)
+        self.optimizer.zero_grad()
+        loss.backward()
+        self.optimizer.step()
 
         return {
             "Baseline Loss": ptu.to_numpy(loss),
         }
+
+

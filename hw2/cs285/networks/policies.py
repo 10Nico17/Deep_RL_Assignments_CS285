@@ -36,6 +36,7 @@ class MLPPolicy(nn.Module):
             parameters = self.logits_net.parameters(): Alle Parameter dieses Netzwerks werden dem Optimierer zur Verfügung gestellt, 
             damit sie während des Trainings angepasst werden können.
             """
+            print('discrete')
             self.logits_net = ptu.build_mlp(
                 input_size=ob_dim,
                 output_size=ac_dim,
@@ -51,6 +52,7 @@ class MLPPolicy(nn.Module):
             self.logstd: Ein trainierbarer Parameter (nn.Parameter), der die logarithmierte Standardabweichung (logstd) 
             für die Aktionsverteilung repräsentiert. Dieser Wert wird exponentiiert, um die Standardabweichung (std) zu berechnen.    
             """
+            print('continous')
             self.mean_net = ptu.build_mlp(
                 input_size=ob_dim,
                 output_size=ac_dim,
@@ -68,6 +70,7 @@ class MLPPolicy(nn.Module):
         )
 
         self.discrete = discrete
+
 
     @torch.no_grad()
     def get_action(self, obs: np.ndarray) -> np.ndarray:
@@ -101,14 +104,24 @@ class MLPPolicy(nn.Module):
             # Erstelle eine diskrete Wahrscheinlichkeitsverteilung basierend auf den Logits
             action_dist = distributions.Categorical(logits=logits)
         else:
+            # TODO: define the forward pass for a policy with a continuous action space.
+            mean = self.mean_net(obs)
+            std = torch.exp(self.logstd)
+            dist = distributions.Normal(mean, std)
+        return dist
+
+        
+        
+        '''
+        else:
             # Berechne die Mittelwerte für jede Aktionsdimension
             mean = self.mean_net(obs)
             # Erstelle die Standardabweichung (aus logstd) für die Normalverteilung
             std = torch.exp(self.logstd)
             # Erstelle eine Normalverteilung basierend auf Mittelwert und Standardabweichung
             action_dist = distributions.Normal(mean, std)   
-
         return action_dist
+        '''
     
 
 
@@ -116,8 +129,6 @@ class MLPPolicy(nn.Module):
     def update(self, obs: np.ndarray, actions: np.ndarray, *args, **kwargs) -> dict:
         """Performs one iteration of gradient descent on the provided batch of data."""
         raise NotImplementedError
-
-
 
 
 
@@ -161,6 +172,20 @@ class MLPPolicyPG(MLPPolicy):
         # In PyTorch wird dies automatisch durch `loss.backward()` berechnet.
 
         log_pi = self.forward(obs).log_prob(actions)
+
+        '''
+        Um eine einzige Log-Wahrscheinlichkeit pro Aktion zu erhalten (z. B. [batch_size] anstelle von [batch_size, action_dim]), 
+        müssen die Log-Wahrscheinlichkeiten der einzelnen Aktionsdimensionen aufsummiert werden. 
+        Das entspricht der gemeinsamen Wahrscheinlichkeit der multidimensionalen Aktion
+        '''
+
+        if not self.discrete:
+            log_pi = log_pi.sum(axis=-1)
+
+        #print("log_pi shape:", log_pi.shape)
+        #print("advantages shape:", advantages.shape)
+
+
         loss = torch.neg(torch.mean(torch.mul(log_pi, advantages)))
 
         loss.backward()
