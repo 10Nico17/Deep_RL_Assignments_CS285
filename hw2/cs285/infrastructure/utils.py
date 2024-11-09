@@ -17,7 +17,6 @@ def sample_trajectory(
     """Sample a rollout in the environment from a policy."""
 
     #print("sample_trajectory function")
-
     ob = env.reset()[0]
     obs, acs, rewards, next_obs, terminals, image_obs = [], [], [], [], [], []
     steps = 0
@@ -27,22 +26,18 @@ def sample_trajectory(
             if hasattr(env, "sim"):
                 img = env.sim.render(camera_name="track", height=500, width=500)[::-1]
             else:
-                img = env.render(mode="single_rgb_array")
-            image_obs.append(
-                cv2.resize(img, dsize=(250, 250), interpolation=cv2.INTER_CUBIC)
-            )
+                img = env.render()
+
+            if img is not None and img.size > 0:
+                image_obs.append(cv2.resize(img, dsize=(250, 250), interpolation=cv2.INTER_CUBIC))
+            else:
+                print("Warning: No image returned from render.")
 
         # TODO use the most recent ob and the policy to decide what to do
-        #print("policy: ", policy)
-        #print("ob: ", ob)
-        ac: np.ndarray = policy.get_action(ob)
-        #print("ac: ", ac)
 
-        # TODO: use that action to take a step in the environment
+        ac: np.ndarray = policy.get_action(ob)
         next_ob, rew, terminated, truncated, info = env.step(ac)
         done = terminated or truncated
-
-        # TODO rollout can end due to done, or due to max_length
         steps += 1
         rollout_done: bool = done or (steps >= max_length)
 
@@ -53,7 +48,7 @@ def sample_trajectory(
         next_obs.append(next_ob)
         terminals.append(rollout_done)
 
-        ob = next_ob  # jump to next timestep
+        ob = next_ob  
 
         # end the rollout if the rollout ended
         if rollout_done:
@@ -87,15 +82,11 @@ def sample_trajectories(
     timesteps_this_batch = 0
     trajs = []
 
-
     while timesteps_this_batch < min_timesteps_per_batch:
         # collect rollout
         traj = sample_trajectory(env, policy, max_length, render)
         trajs.append(traj)
-
-        # count steps
         timesteps_this_batch += get_traj_length(traj)
-
     return trajs, timesteps_this_batch
 
 
@@ -112,8 +103,6 @@ def sample_n_trajectories(
         traj = sample_trajectory(env, policy, max_length, render)
         trajs.append(traj)
     return trajs
-
-
 
 
 

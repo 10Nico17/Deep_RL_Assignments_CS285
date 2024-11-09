@@ -1,12 +1,9 @@
-"""
+""""
+Script ausführen:
 /home/nico/Documents/Deep_RL/homework_fall2023/hw2
 python3 cs285/scripts/run_hw2.py
-"""
 
-
-
-""""
-in Pfad:
+Data:
 /home/nico/Documents/Deep_RL/homework_fall2023/hw2/data/q2_pg_cartpole_rtg_CartPole-v0_07-11-2024_12-23-04
 command:
  tensorboard --logdir=.
@@ -26,6 +23,9 @@ from cs285.infrastructure import pytorch_util as ptu
 from cs285.infrastructure import utils
 from cs285.infrastructure.logger import Logger
 from cs285.infrastructure.action_noise_wrapper import ActionNoiseWrapper
+from gym.wrappers import RecordVideo
+
+import matplotlib.pyplot as plt
 
 MAX_NVIDEO = 2
 
@@ -34,16 +34,15 @@ def run_training_loop(args):
     
     logger = Logger(args.logdir)
 
-    # set random seeds
     np.random.seed(args.seed)
     torch.manual_seed(args.seed)
     ptu.init_gpu(use_gpu=not args.no_gpu, gpu_id=args.which_gpu)
+    env = gym.make(args.env_name, render_mode="rgb_array")
 
-    # make the gym environment
-    env = gym.make(args.env_name, render_mode=None)
+
+
     discrete = isinstance(env.action_space, gym.spaces.Discrete)
 
-    # add action noise, if needed
     if args.action_noise_std > 0:
         assert not discrete, f"Cannot use --action_noise_std for discrete environment {args.env_name}"
         env = ActionNoiseWrapper(env, args.seed, args.action_noise_std)
@@ -53,7 +52,6 @@ def run_training_loop(args):
     ob_dim = env.observation_space.shape[0]
     ac_dim = env.action_space.n if discrete else env.action_space.shape[0]
 
-    # simulation timestep, will be used for video saving
     if hasattr(env, "model"):
         fps = 1 / env.model.opt.timestep
     else:
@@ -79,36 +77,36 @@ def run_training_loop(args):
     total_envsteps = 0
     start_time = time.time()
 
+
+    avg_returns = []
     for itr in range(args.n_iter):
-        #print(f"\n********** Iteration {itr} ************")
-        # TODO: sample `args.batch_size` transitions using utils.sample_trajectories
-        # make sure to use `max_ep_len`
         
-        #trajs, envsteps_this_batch = None, None  # TODO
-
         """
-        Die sample_trajectories-Funktion sammelt Trajektorien, und ihre Rückgabewerte sollten trajs (eine Liste von Trajektorien) 
-        und envsteps_this_batch (die Anzahl der in dieser Iteration gesammelten Schritte) sein.
+        -n 1:   Anzahl der Iterationen für das Training. Jede Iteration besteht aus einer Reihe von Aktionen 
+                des Agenten in der Umgebung und einem Trainingsschritt, um die Policy zu verbessern bis der 
+                Terminal state erreicht wird oder der maximale Anzahl überschritten ist.
+
+        -b 1:   Batchgröße, die die Anzahl der gesammelten Zustands-Aktions-Paare angibt, die pro Iteration verwendet werden. 
+                Eine Batchgröße von 1 bedeutet, dass nach jedem einzelnen Zustands-Aktions-Paar eine Aktualisierung vorgenommen wird. 
+                Normalerweise werden größere Werte für stabileres Lernen verwendet.
         """
 
-        trajs, envsteps_this_batch = utils.sample_trajectories(env, agent.actor, args.batch_size, max_ep_len)
-        #print("trajs: ", trajs)
-        #print("envsteps_this_batch: ", envsteps_this_batch)
-
+        trajs, envsteps_this_batch = utils.sample_trajectories(env, agent.actor, args.batch_size, max_ep_len)    
+        print('trajs: ', trajs)   
         
         total_envsteps += envsteps_this_batch
-
-        # trajs should be a list of dictionaries of NumPy arrays, where each dictionary corresponds to a trajectory.
-        # this line converts this into a single dictionary of lists of NumPy arrays.
         trajs_dict = {k: [traj[k] for traj in trajs] for k in trajs[0]}
-
-        #print("trajs_dict: ", trajs_dict)
-
-        # TODO: train the agent using the sampled trajectories and the agent's update function
+        returns = [np.sum(traj["reward"]) for traj in trajs]
+        avg_return = np.mean(returns)
+        print('avg_return: ', avg_return)
+        avg_returns.append(avg_return)  
+        
+        
+        
         train_info = agent.update(trajs_dict["observation"], trajs_dict["action"], trajs_dict["reward"], trajs_dict["terminal"])
 
-
-        
+        '''
+        # Save data with logger and visualize with tensorboard 
         if itr % args.scalar_log_freq == 0:
             # save eval metrics
             print("\nCollecting data for eval...")
@@ -147,11 +145,24 @@ def run_training_loop(args):
                 max_videos_to_save=MAX_NVIDEO,
                 video_title="eval_rollouts",
             )
+            '''
+            
+
+            
+    # Plot der durchschnittlichen Returns
+    plt.figure()
+    plt.plot(range(args.n_iter), avg_returns, label="Average Return")
+    plt.xlabel("Iteration")
+    plt.ylabel("Average Return")
+    plt.title(args.exp_name)
+    plt.legend()
+    plot_path = os.path.join("data", f"{args.exp_name}_average_return_plot.png")
+    os.makedirs("data", exist_ok=True)
+    plt.savefig(plot_path)
+    print(f"Plot saved to {plot_path}")
+
+
         
-
-
-
-
 def main():
     import argparse
 

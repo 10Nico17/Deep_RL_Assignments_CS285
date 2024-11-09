@@ -27,26 +27,33 @@ class Logger:
         self._summ_writer.add_video('{}'.format(name), video_frames, step, fps=fps)
 
     def log_trajs_as_videos(self, trajs, step, max_videos_to_save=2, fps=10, video_title='video'):
-
         # reshape the rollouts
-        videos = [np.transpose(p['image_obs'], [0, 3, 1, 2]) for p in trajs]
+        videos = []
+        for p in trajs:
+            if p['image_obs'].size > 0 and p['image_obs'].ndim == 4:
+                # Prüfe, ob `image_obs` die Form [timesteps, height, width, channels] hat
+                videos.append(np.transpose(p['image_obs'], [0, 3, 1, 2]))
+            else:
+                print(f"Warning: Skipping trajectory with unexpected shape {p['image_obs'].shape}")
+
+        if not videos:
+            print("No valid videos found for logging.")
+            return
 
         # max rollout length
         max_videos_to_save = np.min([max_videos_to_save, len(videos)])
-        max_length = videos[0].shape[0]
-        for i in range(max_videos_to_save):
-            if videos[i].shape[0]>max_length:
-                max_length = videos[i].shape[0]
+        max_length = max(video.shape[0] for video in videos[:max_videos_to_save])
 
-        # pad rollouts to all be same length
+        # pad rollouts to all be the same length
         for i in range(max_videos_to_save):
-            if videos[i].shape[0]<max_length:
-                padding = np.tile([videos[i][-1]], (max_length-videos[i].shape[0],1,1,1))
-                videos[i] = np.concatenate([videos[i], padding], 0)
+            if videos[i].shape[0] < max_length:
+                padding = np.tile(videos[i][-1:], (max_length - videos[i].shape[0], 1, 1, 1))
+                videos[i] = np.concatenate([videos[i], padding], axis=0)
 
         # log videos to tensorboard event file
-        videos = np.stack(videos[:max_videos_to_save], 0)
+        videos = np.stack(videos[:max_videos_to_save], axis=0)
         self.log_video(videos, video_title, step, fps=fps)
+
 
     def log_figures(self, figure, name, step, phase):
         """figure: matplotlib.pyplot figure handle"""

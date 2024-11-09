@@ -28,8 +28,7 @@ class MLPPolicy(nn.Module):
     ):
         super().__init__()
 
-        if discrete:
-            
+        if discrete:            
             """
             Wenn der Aktionsraum diskret ist, erzeugt das Netzwerk Wahrscheinlichkeiten (Logits) für jede mögliche Aktion:
             self.logits_net: Ein neuronales Netzwerk, das Logits (unskalierte Wahrscheinlichkeiten) für jede mögliche Aktion ausgibt. 
@@ -37,7 +36,6 @@ class MLPPolicy(nn.Module):
             parameters = self.logits_net.parameters(): Alle Parameter dieses Netzwerks werden dem Optimierer zur Verfügung gestellt, 
             damit sie während des Trainings angepasst werden können.
             """
-
             self.logits_net = ptu.build_mlp(
                 input_size=ob_dim,
                 output_size=ac_dim,
@@ -53,8 +51,6 @@ class MLPPolicy(nn.Module):
             self.logstd: Ein trainierbarer Parameter (nn.Parameter), der die logarithmierte Standardabweichung (logstd) 
             für die Aktionsverteilung repräsentiert. Dieser Wert wird exponentiiert, um die Standardabweichung (std) zu berechnen.    
             """
-
-
             self.mean_net = ptu.build_mlp(
                 input_size=ob_dim,
                 output_size=ac_dim,
@@ -82,11 +78,7 @@ class MLPPolicy(nn.Module):
             obs = obs[0]
 
         obs_tensor = ptu.from_numpy(obs).unsqueeze(0)  
-
-        print("discrete actions space: ", self.discrete)
         action_dist = self.forward(obs_tensor)
-        print("action_dist: ", action_dist)
-
     
         if self.discrete:
             action = action_dist.sample().item()  
@@ -101,7 +93,7 @@ class MLPPolicy(nn.Module):
         able to differentiate through it. For example, you can return a torch.FloatTensor. You can also return more
         flexible objects, such as a `torch.distributions.Distribution` object. It's up to you!
         """
-        print("forward")
+        #print("forward")
 
         if self.discrete:
             # Berechne die Logits für jede mögliche Aktion
@@ -139,7 +131,7 @@ class MLPPolicyPG(MLPPolicy):
         advantages: np.ndarray,
     ) -> dict:
         
-        print("update policies")
+        #print("update policies")
         """Implements the policy gradient actor update."""
         obs = ptu.from_numpy(obs)
         actions = ptu.from_numpy(actions)
