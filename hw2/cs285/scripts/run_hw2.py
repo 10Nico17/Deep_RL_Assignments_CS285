@@ -156,7 +156,7 @@ def run_training_loop(args):
             
             
 
-            
+    '''
     # Plot der durchschnittlichen Returns
     plt.figure()
     plt.plot(range(args.n_iter), avg_returns, label="Average Return")
@@ -168,7 +168,7 @@ def run_training_loop(args):
     os.makedirs("data", exist_ok=True)
     plt.savefig(plot_path)
     print(f"Plot saved to {plot_path}")
-
+    '''
 
         
 def main():

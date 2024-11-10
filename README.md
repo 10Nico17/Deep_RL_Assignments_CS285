@@ -33,54 +33,37 @@
 
 
 ## Task1, 100 iterations/episodes: 
-#### no critic use q-values, no reward-to-go
-python cs285/scripts/run_hw2.py --env_name CartPole-v0 -n 100 -b 1000 --exp_name experiment1
+#### no critic, no reward-to-go
+###### 1. python cs285/scripts/run_hw2.py --env_name CartPole-v0 -n 100 -b 1000 --exp_name cartpole
 
-<img src="hw2/images/experiment1.png" alt="Continuous Action Space" width="600px">
+#### no critic, reward-to-go
+###### 2. python cs285/scripts/run_hw2.py --env_name CartPole-v0 -n 100 -b 1000 -rtg --exp_name cartpole_rtg
 
-#### no critic use q-values, reward-to-go
-python cs285/scripts/run_hw2.py --env_name CartPole-v0 -n 100 -b 1000 -rtg --exp_name experiment2
+#### no critic, no reward-to-go, Normalize advantage
+###### 3. python cs285/scripts/run_hw2.py --env_name CartPole-v0 -n 100 -b 1000 -na --exp_name cartpole_na
 
-<img src="hw2/images/experiment2.png" width="600px">
+#### no critic, reward-to-go, Normalize advantage
+###### 4. python cs285/scripts/run_hw2.py --env_name CartPole-v0 -n 100 -b 1000 -rtg -na --exp_name cartpole_rtg_na
 
+<img src="hw2/images/overview_cartpole_sb.png" width="800px">
 
-#### no critic use q-values, no reward-to-go, Normalize advantage
-python cs285/scripts/run_hw2.py --env_name CartPole-v0 -n 100 -b 1000 -na --exp_name experiment3
+#### no critic, no reward-to-go, batch_size 4000
+###### 1. python cs285/scripts/run_hw2.py --env_name CartPole-v0 -n 100 -b 4000 --exp_name cartpole_lb
 
-<img src="hw2/images/experiment3.png" width="600px">
+#### no critic, reward-to-go, batch_size 4000
+###### 2. python cs285/scripts/run_hw2.py --env_name CartPole-v0 -n 100 -b 4000 -rtg --exp_name cartpole_lb_rtg
+
+#### no critic, no reward-to-go, Normalize advantage, batch_size 4000
+###### 3. python cs285/scripts/run_hw2.py --env_name CartPole-v0 -n 100 -b 4000 -na --exp_name cartpole_lb_na
+
+#### no critic, reward-to-go, Normalize advantage, batch_size 4000
+###### 4.python cs285/scripts/run_hw2.py --env_name CartPole-v0 -n 100 -b 4000 -rtg -na --exp_name cartpole_lb_rtg_na
+
+<img src="hw2/images/overview_cartpole_lb.png" width="800px">
 
 <img src="hw2/images/cartPole1.gif" width="600px">
 
 
-#### no critic use q-values, reward-to-go, Normalize advantage
-python cs285/scripts/run_hw2.py --env_name CartPole-v0 -n 100 -b 1000 -na --exp_name experiment4
-
-<img src="hw2/images/experiment4.png" width="600px">
-
-
-
-#### no critic use q-values, no reward-to-go, batch_size 4000
-python cs285/scripts/run_hw2.py --env_name CartPole-v0 -n 100 -b 4000 --exp_name experiment5
-
-<img src="hw2/images/experiment5.png" width="600px">
-
-
-#### no critic use q-values, reward-to-go, batch_size 4000
-python cs285/scripts/run_hw2.py --env_name CartPole-v0 -n 100 -b 4000 --exp_name experiment6
-
-<img src="hw2/images/experiment6.png" width="600px">
-
-
-#### no critic use q-values, no reward-to-go, Normalize advantage, batch_size 4000
-python cs285/scripts/run_hw2.py --env_name CartPole-v0 -n 100 -b 4000 -na --exp_name experiment7
-
-<img src="hw2/images/experiment7.png" width="600px">
-
-
-#### no critic use q-values, reward-to-go, Normalize advantage, batch_size 4000
-python cs285/scripts/run_hw2.py --env_name CartPole-v0 -n 100 -b 4000 -rtg -na --exp_name experiment8
-
-<img src="hw2/images/experiment8.png" width="600px">
 
 
 ### Task2, Using a Neural Network Baseline
