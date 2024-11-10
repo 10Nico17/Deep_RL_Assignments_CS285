@@ -61,53 +61,48 @@
 
 <img src="hw2/images/overview_cartpole_lb.png" width="800px">
 
-<img src="hw2/images/cartPole1.gif" width="600px">
+<img src="hw2/images/cartPole1.gif" width="800px">
 
 
 
 
 ### Task2, Using a Neural Network Baseline
 
-##### Environment2:
+##### Continous Environment2:
 
-<img src="hw2/images/etask2.png" width="600px">
-
-### Continous, new env
+<img src="hw2/images/etask2.png" width="800px">
 
 #### no critic use q-values, reward-to-go, batch_size 5000
-python cs285/scripts/run_hw2.py --env_name HalfCheetah-v4 -n 100 -b 5000 -rtg --discount 0.95 -lr 0.01 --exp_name experiment9
-
-<img src="hw2/images/experiment9.png" width="600px">
-
+###### 1. python cs285/scripts/run_hw2.py --env_name HalfCheetah-v4 -n 100 -b 5000 -rtg --discount 0.95 -lr 0.01 --exp_name cheetah
 
 #### with critic NN (Baseline), reward-to-go, batch_size 5000
+<img src="hw2/images/actor_critic.png" width="800px">
 
-<img src="hw2/images/actor_critic.png" width="600px">
+###### 2. python cs285/scripts/run_hw2.py --env_name HalfCheetah-v4 -n 100 -b 5000 -rtg --discount 0.95 -lr 0.01 --use_baseline -blr 0.01 -bgs 5 --exp_name cheetah_baseline
 
-python cs285/scripts/run_hw2.py --env_name HalfCheetah-v4 -n 100 -b 5000 -rtg --discount 0.95 -lr 0.01 --use_baseline -blr 0.01 -bgs 5 
---exp_name experiment10
+<img src="hw2/images/overview_HalfCheetah.png" width="800px">
 
-<img src="hw2/images/experiment10.png" width="600px">
+<img src="hw2/images/overview_HalfCheetah_baseline_loss.png" width="800px">
 
 
 ### Task3, Generalized Advantage Estimation
 
 ##### Environment3:
-<img src="hw2/images/ludar.png" width="600px">
+<img src="hw2/images/ludar.png" width="800px">
 
-<img src="hw2/images/networks_LunarLander.png" width="600px">
+<img src="hw2/images/networks_LunarLander.png" width="800px">
 
-#### lamda 0.95
+
 
 <img src="hw2/images/experiment11_lamda_0.95_average_return_plot.png" width="600px">
 
-#### lamda 0.98
 
 <img src="hw2/images/experiment11_lamda_0.98_average_return_plot.png" width="600px">
 
-#### lamda 1
-
 <img src="hw2/images/experiment11_lamda_1_average_return_plot.png" width="600px">
+
+
+
 
 
 ### Task4
