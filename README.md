@@ -96,7 +96,7 @@
 
 <img src="hw2/images/gae_lamba_compare.png" width="800px">
 
-### Task4
+### Task4: Different seeds and hyperparameters
 
 <pre style="font-size: 16px; font-weight: bold;">
 for seed in $(seq 1 5); do
@@ -109,25 +109,23 @@ done
 <img src="hw2/images/pendelum_seeds.png" width="800px">
 
 <pre style="font-size: 16px; font-weight: bold;">
-for seed in $(seq 1 5); do
-    for lr in 0.001 0.005 0.01; do          # Verschiedene Lernraten testen
-        for bs in 1000 2000 5000; do        # Verschiedene Batch-Größen testen
-            python cs285/scripts/run_hw2.py \
-                --env_name InvertedPendulum-v4 \
-                -n 100 \
-                --exp_name pendulum_tune_lr${lr}_bs${bs}_s${seed} \
-                -rtg \
-                --use_baseline \
-                -na \
-                --batch_size $bs \
-                --seed $seed \
-                --learning_rate $lr
-        done
+for lr in 0.001 0.005 0.01; do          # Verschiedene Lernraten testen
+    for bs in 1000 2000 5000; do        # Verschiedene Batch-Größen testen
+        python cs285/scripts/run_hw2.py \
+            --env_name InvertedPendulum-v4 \
+            -n 100 \
+            --exp_name pendulum_tune_lr${lr}_bs${bs} \
+            -rtg \
+            --use_baseline \
+            -na \
+            --batch_size $bs \
+            --learning_rate $lr
     done
 done
 </pre>
 
 
+<img src="hw2/images/pedulum_diff_hyp.png" width="800px">
 
 
 ### Task5
