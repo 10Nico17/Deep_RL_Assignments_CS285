@@ -49,6 +49,9 @@ python cs285/scripts/run_hw2.py --env_name CartPole-v0 -n 100 -b 1000 -na --exp_
 
 <img src="hw2/images/experiment3.png" width="600px">
 
+<img src="hw2/images/cartPole1.gif" width="600px">
+
+
 #### no critic use q-values, reward-to-go, Normalize advantage
 python cs285/scripts/run_hw2.py --env_name CartPole-v0 -n 100 -b 1000 -na --exp_name experiment4
 
@@ -130,3 +133,12 @@ python cs285/scripts/run_hw2.py --env_name HalfCheetah-v4 -n 100 -b 5000 -rtg --
 <img src="hw2/images/humanoid.png" width="600px">
 
 <img src="hw2/images/networks_humanoid.png" width="600px">
+
+<img src="hw2/images/humanoid_return.png" width="600px">
+
+
+https://www.gymlibrary.dev/environments/mujoco/humanoid/
+
+SSH video rendering: xvfb-run -s "-screen 0 1400x900x24" python cs285/scripts/run_hw2.py --env_name Humanoid-v4 --ep_len 1000 --discount 0.99 -n 1 -l 3 -s 256 -b 50000 -lr 0.001 --baseline_gradient_steps 50 -na --use_reward_to_go --use_baseline --gae_lambda 0.97 --exp_name humanoid --video_log_freq 5
+
+tensorboard --logdir=.

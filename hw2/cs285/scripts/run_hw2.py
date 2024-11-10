@@ -113,7 +113,7 @@ def run_training_loop(args):
         
         train_info = agent.update(trajs_dict["observation"], trajs_dict["action"], trajs_dict["reward"], trajs_dict["terminal"])
 
-        '''
+        
         # Save data with logger and visualize with tensorboard 
         if itr % args.scalar_log_freq == 0:
             # save eval metrics
@@ -141,7 +141,7 @@ def run_training_loop(args):
             logger.flush()
 
         if args.video_log_freq != -1 and itr % args.video_log_freq == 0:
-            print("\nCollecting video rollouts...")
+            print(f"################## Saving video at iteration {itr} to {args.logdir}")
             eval_video_trajs = utils.sample_n_trajectories(
                 env, agent.actor, MAX_NVIDEO, max_ep_len, render=True
             )
@@ -153,7 +153,7 @@ def run_training_loop(args):
                 max_videos_to_save=MAX_NVIDEO,
                 video_title="eval_rollouts",
             )
-            '''
+            
             
 
             
