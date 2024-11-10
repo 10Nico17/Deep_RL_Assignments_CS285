@@ -92,15 +92,10 @@
 
 <img src="hw2/images/networks_LunarLander.png" width="800px">
 
+###### python cs285/scripts/run_hw2.py --env_name LunarLander-v2 --ep_len 1000 --discount 0.99 -n 300 -l 3 -s 128 -b 2000 -lr 0.001 --use_reward_to_go --use_baseline --gae_lambda <λ> --exp_name lunar_lander_lambda<λ>
 
 
-<img src="hw2/images/experiment11_lamda_0.95_average_return_plot.png" width="600px">
-
-
-<img src="hw2/images/experiment11_lamda_0.98_average_return_plot.png" width="600px">
-
-<img src="hw2/images/experiment11_lamda_1_average_return_plot.png" width="600px">
-
+<img src="hw2/images/gae_lamba_compare.png" width="800px">
 
 
 
