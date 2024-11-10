@@ -94,13 +94,43 @@
 
 ###### python cs285/scripts/run_hw2.py --env_name LunarLander-v2 --ep_len 1000 --discount 0.99 -n 300 -l 3 -s 128 -b 2000 -lr 0.001 --use_reward_to_go --use_baseline --gae_lambda <λ> --exp_name lunar_lander_lambda<λ>
 
-
 <img src="hw2/images/gae_lamba_compare.png" width="800px">
 
-
-
-
 ### Task4
+
+<pre style="font-size: 16px; font-weight: bold;">
+for seed in $(seq 1 5); do
+    python cs285/scripts/run_hw2.py --env_name InvertedPendulum-v4 -n 100 --exp_name pendulum_tune_lr0.005_bs2000_s$seed -rtg --use_baseline -na --batch_size 2000 --seed $seed --learning_rate 0.005
+done
+</pre>
+
+<img src="hw2/images/env_pendelum.png" width="800px">
+
+<img src="hw2/images/pendelum_seeds.png" width="800px">
+
+<pre style="font-size: 16px; font-weight: bold;">
+for seed in $(seq 1 5); do
+    for lr in 0.001 0.005 0.01; do          # Verschiedene Lernraten testen
+        for bs in 1000 2000 5000; do        # Verschiedene Batch-Größen testen
+            python cs285/scripts/run_hw2.py \
+                --env_name InvertedPendulum-v4 \
+                -n 100 \
+                --exp_name pendulum_tune_lr${lr}_bs${bs}_s${seed} \
+                -rtg \
+                --use_baseline \
+                -na \
+                --batch_size $bs \
+                --seed $seed \
+                --learning_rate $lr
+        done
+    done
+done
+</pre>
+
+
+
+
+### Task5
 
 ##### Environment4:
 <img src="hw2/images/humanoid.png" width="600px">
