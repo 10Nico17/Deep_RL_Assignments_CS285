@@ -116,20 +116,27 @@ class MLPPolicySL(BasePolicy, nn.Module, metaclass=abc.ABCMeta):
         """
         torch.save(self.state_dict(), filepath)
 
+
+
     def forward(self, observation: torch.FloatTensor) -> Any:
         """
         Defines the forward pass of the network
 
         :param observation: observation(s) to query the policy
         :return:
-            action: sampled action(s) from the policy
+            action_distribution: a distribution object representing the policy's action distribution
         """
-        # TODO: implement the forward pass of the network.
-        # You can return anything you want, but you should be able to differentiate
-        # through it. For example, you can return a torch.FloatTensor. You can also
-        # return more flexible objects, such as a
-        # `torch.distributions.Distribution` object. It's up to you!
-        raise NotImplementedError
+        # Compute the mean action from the observation
+        batch_mean = self.mean_net(observation)  # Shape: [batch_size, ac_dim]
+        # Expand log standard deviation to match the shape of batch_mean
+        batch_logstd = self.logstd.expand_as(batch_mean)  # Shape: [batch_size, ac_dim]
+        # Compute the standard deviation
+        batch_std = torch.exp(batch_logstd)  # Shape: [batch_size, ac_dim]
+        # Create a Normal distribution for each action dimension
+        action_distribution = torch.distributions.Normal(loc=batch_mean, scale=batch_std)
+        # For multiple action dimensions, make it an independent distribution
+        action_distribution = torch.distributions.Independent(action_distribution, 1)
+        return action_distribution
 
     def update(self, observations, actions):
         """
@@ -140,9 +147,54 @@ class MLPPolicySL(BasePolicy, nn.Module, metaclass=abc.ABCMeta):
         :return:
             dict: 'Training Loss': supervised learning loss
         """
-        # TODO: update the policy and return the loss
-        loss = TODO
+        # Convert observations and actions to torch tensors
+        observations = ptu.from_numpy(observations)
+        actions = ptu.from_numpy(actions)
+        # Get the action distribution from the forward pass
+        action_distribution = self.forward(observations)
+        # Compute the negative log-likelihood of the expert actions
+        log_prob = action_distribution.log_prob(actions)  # Shape: [batch_size]
+        loss = -log_prob.mean()  # Scalar
+        # Backpropagate the loss and update the policy parameters
+        self.optimizer.zero_grad()
+        loss.backward()
+        self.optimizer.step()
         return {
-            # You can add extra logging information here, but keep this line
             'Training Loss': ptu.to_numpy(loss),
         }
+
+
+    """
+    def forward(self, observation: torch.FloatTensor) -> distributions.Normal:
+        # Pass the observation through the mean network
+        mean = self.mean_net(observation)
+        # Create a Normal distribution using the mean and logstd
+        action_distribution = distributions.Normal(mean, torch.exp(self.logstd))
+        return action_distribution
+
+
+    def update(self, observations: torch.FloatTensor, actions: torch.FloatTensor) -> dict:
+        # Compute the action distribution for the given observations
+        action_distribution = self.forward(observations)
+        # Negative log-likelihood loss (log probability of target actions under the policy)
+        log_probs = action_distribution.log_prob(actions).sum(axis=-1)
+        loss = -log_probs.mean()
+
+        # Backpropagation and optimization step
+        self.optimizer.zero_grad()
+        loss.backward()
+        self.optimizer.step()
+
+        return {
+            'Training Loss': ptu.to_numpy(loss),
+        }
+
+    """
+
+
+
+
+
+
+
+

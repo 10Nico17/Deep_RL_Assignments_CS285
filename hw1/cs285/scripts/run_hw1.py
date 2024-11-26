@@ -4,6 +4,14 @@ Runs behavior cloning and DAgger for homework 1
 Functions to edit:
     1. run_training_loop
 """
+
+
+
+
+#  tensorboard --logdir=.
+
+
+
 import os
 import sys
 sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
@@ -44,7 +52,7 @@ def run_training_loop(params):
     #############
 
     # Get params, create logger, create TF session
-    #logger = Logger(params['logdir'])
+    logger = Logger(params['logdir'])
 
     # Set random seeds
     seed = params['seed']
@@ -56,15 +64,17 @@ def run_training_loop(params):
     )
 
     # Set logger attributes
-    #log_video = True
-    #log_metrics = True
+    log_video = True
+    log_metrics = True
 
     #############
     ## ENV
     #############
 
     # Make the gym environment
-    env = gym.make(params['env_name'], render_mode=None)
+    #env = gym.make(params['env_name'], render_mode=None)
+    env = gym.make('Ant-v4', render_mode="rgb_array")
+
     env.reset(seed=seed)
 
     # Maximum length for episodes
@@ -131,20 +141,22 @@ def run_training_loop(params):
         else:
             # DAGGER training from sampled data relabeled by expert
             assert params['do_dagger']
-            # TODO: collect `params['batch_size']` transitions
-            # HINT: use utils.sample_trajectories
-            # TODO: implement missing parts of utils.sample_trajectory
-            paths, envsteps_this_batch = TODO
 
-            # relabel the collected obs with actions from a provided expert policy
+            # Collect `params['batch_size']` transitions
+            paths, envsteps_this_batch = utils.sample_trajectories(
+                env, actor, params['batch_size'], params['ep_len']
+            )
+
+            # Relabel collected observations with actions from expert policy
             if params['do_dagger']:
                 print("\nRelabelling collected observations with labels from an expert policy...")
+                for path in paths:
+                    expert_actions = expert_policy.get_action(path["observation"])
+                    path["action"] = expert_actions
 
-                # TODO: relabel collected obsevations (from our policy) with labels from expert policy
-                # HINT: query the policy (using the get_action function) with paths[i]["observation"]
-                # and replace paths[i]["action"] with these expert labels
-                paths = TODO
-
+        
+        
+        
         total_envsteps += envsteps_this_batch
         # add collected data to replay buffer
         replay_buffer.add_rollouts(paths)
@@ -152,21 +164,20 @@ def run_training_loop(params):
         # train agent (using sampled data from replay buffer)
         print('\nTraining agent using sampled data from replay buffer...')
         training_logs = []
+
+
         for _ in range(params['num_agent_train_steps_per_iter']):
+            # Sample data from replay buffer
+            #batch_indices = np.random.permutation(len(replay_buffer.observations))[:params['train_batch_size']]
+            indices = np.random.choice(len(replay_buffer.obs), size=params['train_batch_size'], replace=False)
+            ob_batch = replay_buffer.obs[indices]
+            ac_batch = replay_buffer.acs[indices]
 
-          # TODO: sample some data from replay_buffer
-          # HINT1: how much data = params['train_batch_size']
-          # HINT2: use np.random.permutation to sample random indices
-          # HINT3: return corresponding data points from each array (i.e., not different indices from each array)
-          # for imitation learning, we only need observations and actions.  
-          ob_batch, ac_batch = TODO
-
-          # use the sampled data to train an agent
-          train_log = actor.update(ob_batch, ac_batch)
-          training_logs.append(train_log)
+            # Train the agent using the sampled data
+            train_log = actor.update(ob_batch, ac_batch)
+            training_logs.append(train_log)     
 
 
-        
         # log/save
         print('\nBeginning logging procedure...')
         if log_video:
@@ -182,6 +193,8 @@ def run_training_loop(params):
                     fps=fps,
                     max_videos_to_save=MAX_NVIDEO,
                     video_title='eval_rollouts')
+
+
 
         if log_metrics:
             # save eval metrics

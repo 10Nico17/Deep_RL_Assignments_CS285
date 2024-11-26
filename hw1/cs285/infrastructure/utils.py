@@ -13,35 +13,47 @@ import time
 from cs285.infrastructure import pytorch_util as ptu
 
 
+
+
 def sample_trajectory(env, policy, max_path_length, render=False):
     """Sample a rollout in the environment from a policy."""
     
     # initialize env for the beginning of a new rollout
-    ob =  env.reset() # TODO: initial observation after resetting the env
+    ob, _ = env.reset()     
+    #print(f"################# Reset observation: {ob}")
 
     # init vars
     obs, acs, rewards, next_obs, terminals, image_obs = [], [], [], [], [], []
     steps = 0
     while True:
 
-        # render image of the simulated env
         if render:
-            if hasattr(env, 'sim'):
-                img = env.sim.render(camera_name='track', height=500, width=500)[::-1]
+            img = env.render()  # Standard-Rendering
+            if img is not None and len(img.shape) == 3:  # Prüfe, ob das Bild gültig ist
+                resized_img = cv2.resize(img, dsize=(250, 250), interpolation=cv2.INTER_CUBIC)
+                image_obs.append(resized_img)
             else:
-                img = env.render(mode='single_rgb_array')
-            image_obs.append(cv2.resize(img, dsize=(250, 250), interpolation=cv2.INTER_CUBIC))
-    
+                print("Warning: Rendered image is invalid or None. Skipping.")
+         
+       
         # TODO use the most recent ob to decide what to do
-        ac = TODO # HINT: this is a numpy array
-        ac = ac[0]
-
+        #ac = ptu.to_numpy(policy(ptu.from_numpy(ob)[None])) # HINT: this is a numpy array
+        action_distribution = policy(ptu.from_numpy(ob)[None])  # Erhalte die Distribution
+        ac = ptu.to_numpy(action_distribution.sample())  # Sample eine Aktion und konvertiere sie zu NumPy
+        print("ac: ", ac)
+        ac = ac[0]  # Entferne die Batch-Dimension, um ein 1D-Array zu erhalten
+        
         # TODO: take that action and get reward and next ob
-        next_ob, rew, done, _ = TODO
+        #next_ob, rew, done, _ = env.step(ac) 
+        next_ob, rew, terminated, truncated, info = env.step(ac)
+        done = terminated or truncated  # Kombiniere beide Flags
+
+
+        print(f"################# Reset observation: {next_ob}")
         
         # TODO rollout can end due to done, or due to max_path_length
         steps += 1
-        rollout_done = TODO # HINT: this is either 0 or 1
+        rollout_done = 1 if done or steps >= max_path_length else 0 # HINT: this is either 0 or 1
         
         # record result of taking that action
         obs.append(ob)
@@ -62,6 +74,9 @@ def sample_trajectory(env, policy, max_path_length, render=False):
             "action" : np.array(acs, dtype=np.float32),
             "next_observation": np.array(next_obs, dtype=np.float32),
             "terminal": np.array(terminals, dtype=np.float32)}
+
+
+
 
 
 def sample_trajectories(env, policy, min_timesteps_per_batch, max_path_length, render=False):
