@@ -1,23 +1,28 @@
+"""
+ tensorboard --logdir=.
+
+"""
+
 import time
 import argparse
 
+import os
+import sys
+sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
 from cs285.agents.dqn_agent import DQNAgent
 import cs285.env_configs
 
 import os
 import time
-
 import gym
 from gym import wrappers
 import numpy as np
 import torch
 from cs285.infrastructure import pytorch_util as ptu
 import tqdm
-
 from cs285.infrastructure import utils
 from cs285.infrastructure.logger import Logger
 from cs285.infrastructure.replay_buffer import MemoryEfficientReplayBuffer, ReplayBuffer
-
 from scripting_utils import make_logger, make_config
 
 MAX_NVIDEO = 2
@@ -25,6 +30,8 @@ MAX_NVIDEO = 2
 
 def run_training_loop(config: dict, logger: Logger, args: argparse.Namespace):
     # set random seeds
+    
+    
     np.random.seed(args.seed)
     torch.manual_seed(args.seed)
     ptu.init_gpu(use_gpu=not args.no_gpu, gpu_id=args.which_gpu)
@@ -36,13 +43,21 @@ def run_training_loop(config: dict, logger: Logger, args: argparse.Namespace):
     exploration_schedule = config["exploration_schedule"]
     discrete = isinstance(env.action_space, gym.spaces.Discrete)
 
+    #print("observation_space.shape: ", env.observation_space.shape)
+    #print("env.action_space.n: ", env.action_space.n)
+
+    
+    
     assert discrete, "DQN only supports discrete action spaces"
+
 
     agent = DQNAgent(
         env.observation_space.shape,
         env.action_space.n,
         **config["agent_kwargs"],
     )
+
+    #print("agent: ",agent)
 
     # simulation timestep, will be used for video saving
     if "model" in dir(env):
@@ -72,6 +87,8 @@ def run_training_loop(config: dict, logger: Logger, args: argparse.Namespace):
             f"Unsupported observation space shape: {env.observation_space.shape}"
         )
 
+
+
     def reset_env_training():
         nonlocal observation
 
@@ -87,28 +104,56 @@ def run_training_loop(config: dict, logger: Logger, args: argparse.Namespace):
 
     reset_env_training()
 
+    
+
     for step in tqdm.trange(config["total_steps"], dynamic_ncols=True):
         epsilon = exploration_schedule.value(step)
         
         # TODO(student): Compute action
-        action = ...
+        action = agent.get_action(observation, epsilon)
 
         # TODO(student): Step the environment
+        next_observation, reward, done, info = env.step(action)        
 
         next_observation = np.asarray(next_observation)
         truncated = info.get("TimeLimit.truncated", False)
+
+
+
+        """
+        # TODO(student): Add the data to the replay buffer
+        if isinstance(replay_buffer, MemoryEfficientReplayBuffer):
+            # We're using the memory-efficient replay buffer,
+            # so we only insert next_observation (not observation)
+            replay_buffer.insert(next_observation, action, reward, done)
+        else:
+            # We're using the regular replay buffer
+            replay_buffer.insert(observation, action, reward, next_observation, done)
+        """
+
 
         # TODO(student): Add the data to the replay buffer
         if isinstance(replay_buffer, MemoryEfficientReplayBuffer):
             # We're using the memory-efficient replay buffer,
             # so we only insert next_observation (not observation)
-            ...
+            replay_buffer.insert(action=action, reward=reward, next_observation=next_observation[3], done=done and not truncated)
         else:
             # We're using the regular replay buffer
-            ...
+            replay_buffer.insert(observation=observation, action=action, reward=reward, next_observation=next_observation, done=done and not truncated)
+
+
+
+
+
+
 
         # Handle episode termination
+        
+        
+
+
         if done:
+        #if done or truncated:    
             reset_env_training()
 
             logger.log_scalar(info["episode"]["r"], "train_return", step)
@@ -116,17 +161,28 @@ def run_training_loop(config: dict, logger: Logger, args: argparse.Namespace):
         else:
             observation = next_observation
 
+
+
         # Main DQN training loop
         if step >= config["learning_starts"]:
             # TODO(student): Sample config["batch_size"] samples from the replay buffer
-            batch = ...
+            batch = replay_buffer.sample(config["batch_size"])
 
             # Convert to PyTorch tensors
             batch = ptu.from_numpy(batch)
 
             # TODO(student): Train the agent. `batch` is a dictionary of numpy arrays,
-            update_info = ...
+            # Training des Agenten
+            update_info = agent.update(
+                obs=batch["observations"],
+                action=batch["actions"],
+                reward=batch["rewards"],
+                next_obs=batch["next_observations"],
+                done=batch["dones"],
+                step=step,
+            )
 
+            
             # Logging code
             update_info["epsilon"] = epsilon
             update_info["lr"] = agent.lr_scheduler.get_last_lr()[0]
@@ -135,6 +191,10 @@ def run_training_loop(config: dict, logger: Logger, args: argparse.Namespace):
                 for k, v in update_info.items():
                     logger.log_scalar(v, k, step)
                 logger.flush()
+
+
+
+
 
         if step % args.eval_interval == 0:
             # Evaluate

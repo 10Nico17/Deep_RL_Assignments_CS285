@@ -37,24 +37,24 @@
 ## Homework 2:
 
 ##### Environment1:
-<img src="hw2/images/env1.png" alt="Environment 1" width="600px">
+<img src="hw2/images/env1.png" alt="Environment 1" width="800px">
 
 ##### Reward-to-go:
-<img src="hw2/images/reward_to_go.png" alt="Reward to go" width="600px">
+<img src="hw2/images/reward_to_go.png" alt="Reward to go" width="800px">
 
 ##### Baseline-average-reward:
-<img src="hw2/images/baseline.png" alt="Policy Gradient" width="600px">
+<img src="hw2/images/baseline.png" alt="Policy Gradient" width="800px">
 
 ##### Continuous action space:
-<img src="hw2/images/continous_action_space.png" alt="Continuous Action Space" width="600px">
+<img src="hw2/images/continous_action_space.png" alt="Continuous Action Space" width="800px">
 
 #### Implementation:
 
 #### 1. Policy Gradients
-<img src="hw2/images/policy.png" alt="Policy" width="600px">
+<img src="hw2/images/policy.png" alt="Policy" width="800px">
 
 #### sample action from prob. distr. 
-<img src="hw2/images/action_distr.png" alt="Policy" width="600px">
+<img src="hw2/images/action_distr.png" alt="Policy" width="800px">
 
 
 -n 1:   Specifies the number of iterations for training. Each iteration consists of a series of actions 
@@ -179,3 +179,40 @@ https://www.gymlibrary.dev/environments/mujoco/humanoid/
 SSH video rendering: xvfb-run -s "-screen 0 1400x900x24" python cs285/scripts/run_hw2.py --env_name Humanoid-v4 --ep_len 1000 --discount 0.99 -n 1 -l 3 -s 256 -b 50000 -lr 0.001 --baseline_gradient_steps 50 -na --use_reward_to_go --use_baseline --gae_lambda 0.97 --exp_name humanoid --video_log_freq 5
 
 tensorboard --logdir=.
+
+
+## Homework 3:
+
+#### Basic Q-Learning, basic DQN algorithm
+
+<pre style="font-size: 16px; font-weight: bold;">
+    python cs285/scripts/run_hw3_dqn.py -cfg experiments/dqn/lunarlander.yaml --seed 1
+    python cs285/scripts/run_hw3_dqn.py -cfg experiments/dqn/lunarlander.yaml --seed 2
+</pre>
+
+<img src="hw3/images/DQN.png" width="800px">
+
+<img src="hw3/images/critic_target.png" width="800px">
+
+<img src="hw3/images/lunar1.png" width="800px">
+
+#### Double Q-Learning
+
+<img src="hw3/images/double1.png" width="800px">
+
+<img src="hw3/images/code_doubleq.png" width="800px">
+
+
+<pre style="font-size: 16px; font-weight: bold;">
+    python cs285/scripts/run_hw3_dqn.py -cfg experiments/dqn/lunarlander_doubleq.yaml --seed 1
+    python cs285/scripts/run_hw3_dqn.py -cfg experiments/dqn/lunarlander_doubleq.yaml --seed 2
+</pre>
+
+
+<img src="hw3/images/compare_doubleq_dqn.png" width="800px">
+
+<pre style="font-size: 16px; font-weight: bold;">
+    python cs285/scripts/run_hw3_dqn.py -cfg experiments/dqn/mspacman.yaml    
+</pre>
+
+

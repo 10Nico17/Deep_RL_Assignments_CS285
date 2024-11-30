@@ -1,12 +1,9 @@
 from typing import Sequence, Callable, Tuple, Optional
-
 import torch
 from torch import nn
-
 import numpy as np
-
 import cs285.infrastructure.pytorch_util as ptu
-
+import random
 
 class DQNAgent(nn.Module):
     def __init__(
@@ -27,6 +24,7 @@ class DQNAgent(nn.Module):
 
         self.critic = make_critic(observation_shape, num_actions)
         self.target_critic = make_critic(observation_shape, num_actions)
+
         self.critic_optimizer = make_optimizer(self.critic.parameters())
         self.lr_scheduler = make_lr_schedule(self.critic_optimizer)
 
@@ -41,16 +39,49 @@ class DQNAgent(nn.Module):
 
         self.update_target_critic()
 
+
+    """
     def get_action(self, observation: np.ndarray, epsilon: float = 0.02) -> int:
-        """
-        Used for evaluation.
-        """
         observation = ptu.from_numpy(np.asarray(observation))[None]
 
         # TODO(student): get the action from the critic using an epsilon-greedy strategy
-        action = ...
+        if np.random.rand() < epsilon:
+            # Exploration: choose a random action
+            action = torch.tensor(
+                np.random.randint(0, self.num_actions), dtype=torch.long, device=ptu.device
+            )
+
+        else:
+            # Exploitation: choose the best action based on the critic's Q-values
+            with torch.no_grad():
+                q_values = self.critic(observation)
+                action = torch.argmax(q_values, dim=1)
+
 
         return ptu.to_numpy(action).squeeze(0).item()
+    """
+    
+
+    def get_action(self, observation: np.ndarray, epsilon: float = 0.02) -> int:
+        observation = ptu.from_numpy(np.asarray(observation))[None]
+
+        if random.random() < epsilon:  # Exploration
+            action = torch.randint(0, self.num_actions, (1,))
+        else:  # Exploitation
+            critic_values = self.critic(observation)
+            action = torch.argmax(critic_values, dim=1)
+
+        return ptu.to_numpy(action).squeeze(0).item()
+
+
+
+
+
+
+
+
+
+
 
     def update_critic(
         self,
@@ -63,23 +94,51 @@ class DQNAgent(nn.Module):
         """Update the DQN critic, and return stats for logging."""
         (batch_size,) = reward.shape
 
+        
+        """
         # Compute target values
         with torch.no_grad():
-            # TODO(student): compute target values
-            next_qa_values = ...
+            # Get Q-values for the next state
+            next_qa_values = self.target_critic(next_obs)
+            #print("next_qa_values: ", next_qa_values)
+            if self.use_double_q:
+                # Use Double DQN to select the action with the online critic
+                #print("use_double_q")
+                next_action = torch.argmax(self.critic(next_obs), dim=1, keepdim=True)
+            else:
+                #print("max Q-value directly")
+                next_action = torch.argmax(next_qa_values, dim=1, keepdim=True)
+                #print("next_action: ", next_action)
+
+            # Gather the Q-values for the selected actions
+            next_q_values = next_qa_values.gather(1, next_action).squeeze(1)
+
+            # Compute the target values
+            #target_values = reward + self.discount * next_q_values * (1 - done.float())
+            target_values = reward + self.discount * next_q_values
+        """
+
+
+        with torch.no_grad():
+            next_qa_values = self.target_critic(next_obs)
 
             if self.use_double_q:
-                raise NotImplementedError
+                next_action = torch.argmax(self.critic(next_obs), dim=1).unsqueeze(dim=1)
             else:
-                next_action = ...
-            
-            next_q_values = ...
-            target_values = ...
+                next_action = torch.argmax(next_qa_values, dim=1).unsqueeze(dim=1)
 
-        # TODO(student): train the critic with the target values
-        qa_values = ...
-        q_values = ... # Compute from the data actions; see torch.gather
-        loss = ...
+            next_q_values = next_qa_values.gather(dim=1, index=next_action)
+            target_values = reward.unsqueeze(dim=1) + torch.logical_not(done.unsqueeze(dim=1)) * self.discount * next_q_values
+
+        
+        # Compute current Q-values
+        qa_values = self.critic(obs)
+        #q_values = qa_values.gather(1, action.long().unsqueeze(1)).squeeze(1)
+        q_values = qa_values.gather(dim=1, index=action.unsqueeze(dim=1))  # 2D-Tensor für die Aktionen
+        # Compute the loss
+        loss = self.critic_loss(q_values, target_values)
+
+
 
 
         self.critic_optimizer.zero_grad()
@@ -97,9 +156,15 @@ class DQNAgent(nn.Module):
             "target_values": target_values.mean().item(),
             "grad_norm": grad_norm.item(),
         }
+    
+
+
 
     def update_target_critic(self):
         self.target_critic.load_state_dict(self.critic.state_dict())
+
+
+
 
     def update(
         self,
@@ -113,6 +178,11 @@ class DQNAgent(nn.Module):
         """
         Update the DQN agent, including both the critic and target.
         """
-        # TODO(student): update the critic, and the target if needed
+        # Update the critic and get training statistics
+        critic_stats = self.update_critic(obs, action, reward, next_obs, done)
+
+        # Periodically update the target critic
+        if step % self.target_update_period == 0:
+            self.update_target_critic()
 
         return critic_stats
