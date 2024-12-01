@@ -176,9 +176,16 @@ done
 
 https://www.gymlibrary.dev/environments/mujoco/humanoid/
 
-SSH video rendering: xvfb-run -s "-screen 0 1400x900x24" python cs285/scripts/run_hw2.py --env_name Humanoid-v4 --ep_len 1000 --discount 0.99 -n 1 -l 3 -s 256 -b 50000 -lr 0.001 --baseline_gradient_steps 50 -na --use_reward_to_go --use_baseline --gae_lambda 0.97 --exp_name humanoid --video_log_freq 5
 
-tensorboard --logdir=.
+<pre style="font-size: 16px; font-weight: bold;">
+    SSH video rendering: xvfb-run -s "-screen 0 1400x900x24" python cs285/scripts/run_hw2.py --env_name Humanoid-v4 --ep_len 1000 --discount 0.99 -n 1 -l 3 -s 256 -b 50000 -lr 0.001 --baseline_gradient_steps 50 -na --use_reward_to_go --use_baseline --gae_lambda 0.97 --exp_name humanoid --video_log_freq 5
+</pre>
+
+
+<pre style="font-size: 16px; font-weight: bold;">
+    tensorboard --logdir=.
+</pre>
+
 
 
 ## Homework 3:
@@ -214,5 +221,10 @@ tensorboard --logdir=.
 <pre style="font-size: 16px; font-weight: bold;">
     python cs285/scripts/run_hw3_dqn.py -cfg experiments/dqn/mspacman.yaml    
 </pre>
+
+<img src="hw3/images/pacman.png" width="800px">
+
+
+
 
 

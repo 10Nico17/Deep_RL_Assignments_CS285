@@ -37,9 +37,13 @@ def run_training_loop(config: dict, logger: Logger, args: argparse.Namespace):
     ptu.init_gpu(use_gpu=not args.no_gpu, gpu_id=args.which_gpu)
 
     # make the gym environment
+    
     env = config["make_env"]()
     eval_env = config["make_env"]()
     render_env = config["make_env"](render=True)
+
+
+
     exploration_schedule = config["exploration_schedule"]
     discrete = isinstance(env.action_space, gym.spaces.Discrete)
 
@@ -60,12 +64,17 @@ def run_training_loop(config: dict, logger: Logger, args: argparse.Namespace):
     #print("agent: ",agent)
 
     # simulation timestep, will be used for video saving
+ 
     if "model" in dir(env):
         fps = 1 / env.model.opt.timestep
     elif "render_fps" in env.env.metadata:
         fps = env.env.metadata["render_fps"]
     else:
         fps = 4
+
+
+
+
 
     ep_len = env.spec.max_episode_steps
 
