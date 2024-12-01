@@ -13,11 +13,15 @@ class SoftActorCritic(nn.Module):
         self,
         observation_shape: Sequence[int],
         action_dim: int,
+
+
         make_actor: Callable[[Tuple[int, ...], int], nn.Module],
         make_actor_optimizer: Callable[[torch.nn.ParameterList], torch.optim.Optimizer],
         make_actor_schedule: Callable[
             [torch.optim.Optimizer], torch.optim.lr_scheduler._LRScheduler
         ],
+
+
         make_critic: Callable[[Tuple[int, ...], int], nn.Module],
         make_critic_optimizer: Callable[
             [torch.nn.ParameterList], torch.optim.Optimizer
@@ -58,9 +62,13 @@ class SoftActorCritic(nn.Module):
             target_update_period is not None or soft_target_update_rate is not None
         ), "Must specify either target_update_period or soft_target_update_rate"
 
+
+
         self.actor = make_actor(observation_shape, action_dim)
         self.actor_optimizer = make_actor_optimizer(self.actor.parameters())
         self.actor_lr_scheduler = make_actor_schedule(self.actor_optimizer)
+
+
 
         self.critics = nn.ModuleList(
             [
@@ -97,18 +105,42 @@ class SoftActorCritic(nn.Module):
 
         self.update_target_critic()
 
+        self.first_update = True                     # Attribut für den ersten Aufruf
+        self.first_update_critic = True              # Attribut für den ersten Aufruf
+        self.first_target_critic_backup_type = True  # Attribut für den ersten Aufruf
+        self.first_entropy = True                    # Attribut für den ersten Aufruf
+        self.first_actor_gradient_type = True
+
+
+        self.train_actor_entropy_bonus_only = False
+
     def get_action(self, observation: np.ndarray) -> np.ndarray:
         """
         Compute the action for a given observation.
         """
         with torch.no_grad():
             observation = ptu.from_numpy(observation)[None]
+            """
+            Der Actor gibt eine Wahrscheinlichkeitsverteilung zurück, 
+            die das Modell für die Aktionen in diesem Zustand gelernt hat. 
+
+            action_distribution: Der Name der Variablen.
+            torch.distributions.Distribution: Der erwartete Datentyp dieser Variablen.
+            self.actor(observation): Der Wert, der der Variablen zugewiesen wird.
+            """
 
             action_distribution: torch.distributions.Distribution = self.actor(observation)
-            action: torch.Tensor = action_distribution.sample()
+            """
+            Eine Aktion wird aus der Wahrscheinlichkeitsverteilung gesampelt, 
+            die der Actor berechnet hat. Dies sorgt dafür, dass der Agent weiterhin explorativ bleibt.
+            """    
 
+            action: torch.Tensor = action_distribution.sample()
             assert action.shape == (1, self.action_dim), action.shape
             return ptu.to_numpy(action).squeeze(0)
+
+
+
 
     def critic(self, obs: torch.Tensor, action: torch.Tensor) -> torch.Tensor:
         """
@@ -140,35 +172,46 @@ class SoftActorCritic(nn.Module):
             torch.Tensor: Target values of shape (num_critics, batch_size). 
                 Leading dimension corresponds to target values FOR the different critics.
         """
+        if self.first_target_critic_backup_type:
+            print("target_critic_backup_type: ", self.target_critic_backup_type)
+            self.first_target_critic_backup_type = False 
+
+
 
         assert (
             next_qs.ndim == 2
         ), f"next_qs should have shape (num_critics, batch_size) but got {next_qs.shape}"
         num_critic_networks, batch_size = next_qs.shape
         assert num_critic_networks == self.num_critic_networks
-
+        # print("next_qs: ", next_qs.shape)
         # TODO(student): Implement the different backup strategies.
+        
+        
         if self.target_critic_backup_type == "doubleq":
-            raise NotImplementedError
+            next_qs = next_qs.flip(0)
         elif self.target_critic_backup_type == "min":
-            raise NotImplementedError
+            next_qs, _ = torch.min(next_qs, dim=0)
         elif self.target_critic_backup_type == "mean":
-            raise NotImplementedError
+            next_qs = torch.mean(next_qs, dim=0)
         else:
-            # Default, we don't need to do anything.
             pass
 
 
         # If our backup strategy removed a dimension, add it back in explicitly
         # (assume the target for each critic will be the same)
+        # print("next_qs: ", type(next_qs))
+        # print(next_qs)
         if next_qs.shape == (batch_size,):
             next_qs = next_qs[None].expand((self.num_critic_networks, batch_size)).contiguous()
-
+        # print("num_critic_networks: ", self.num_critic_networks)
+        # print("batch_size: ", batch_size)
         assert next_qs.shape == (
             self.num_critic_networks,
             batch_size,
         ), next_qs.shape
         return next_qs
+
+
 
     def update_critic(
         self,
@@ -181,47 +224,70 @@ class SoftActorCritic(nn.Module):
         """
         Update the critic networks by computing target values and minimizing Bellman error.
         """
+
+        if self.first_update_critic:
+            print("First call to update critic!")
+            self.first_update_critic = False 
+
+
         (batch_size,) = reward.shape
 
         # Compute target values
         # Important: we don't need gradients for target values!
         with torch.no_grad():
             # TODO(student)
-            # Sample from the actor
-            next_action_distribution: torch.distributions.Distribution = ...
-            next_action = ...
-
+            
+            # Sample from the actor for next state according to policy
+            next_action_distribution: torch.distributions.Distribution = self.actor(obs=next_obs)
+            next_action = next_action_distribution.sample()
             # Compute the next Q-values for the sampled actions
-            next_qs = ...
+            next_qs = self.target_critic(obs=next_obs, action=next_action)
 
+
+            ## if we use multiple target and critic networks
             # Handle Q-values from multiple different target critic networks (if necessary)
             # (For double-Q, clip-Q, etc.)
-            next_qs = self.q_backup_strategy(next_qs)
+            # print("here: next_qs: ", next_qs.shape)
+
+            # Check if values changes if we only use one network values must stay the same
+            #next_qs_before = next_qs.clone()            
+            next_qs = self.q_backup_strategy(next_qs)            
+            # Logge die Differenz
+            #print(f"Differenz in next_qs: {torch.sum(next_qs - next_qs_before).item()}")
 
             assert next_qs.shape == (
                 self.num_critic_networks,
                 batch_size,
             ), next_qs.shape
 
+
+
+            ## if we use extra entropy
             if self.use_entropy_bonus and self.backup_entropy:
                 # TODO(student): Add entropy bonus to the target values for SAC
-                next_action_entropy = ...
-                next_qs += ...
+                next_action_entropy = self.entropy(next_action_distribution)
+                
+                next_action_entropy = next_action_entropy[None].expand((self.num_critic_networks, batch_size)).contiguous()
+                assert next_action_entropy.shape == next_qs.shape, next_action_entropy.shape
+                next_qs -= self.temperature * next_action_entropy
+
 
             # Compute the target Q-value
-            target_values: torch.Tensor = ...
+            target_values: torch.Tensor = reward[None] + self.discount * (1 - 1.0 * (done[None])) * next_qs
             assert target_values.shape == (
                 self.num_critic_networks,
                 batch_size
-            )
+            ), target_values.shape
+
+
 
         # TODO(student): Update the critic
         # Predict Q-values
-        q_values = ...
+        q_values = self.critic(obs=obs, action=action)
         assert q_values.shape == (self.num_critic_networks, batch_size), q_values.shape
 
         # Compute loss
-        loss: torch.Tensor = ...
+        loss: torch.Tensor = self.critic_loss(q_values, target_values)
 
         self.critic_optimizer.zero_grad()
         loss.backward()
@@ -233,24 +299,39 @@ class SoftActorCritic(nn.Module):
             "target_values": target_values.mean().item(),
         }
 
+
+
+
+
+
+
     def entropy(self, action_distribution: torch.distributions.Distribution):
         """
         Compute the (approximate) entropy of the action distribution for each batch element.
         """
 
+        if self.first_entropy:
+            print("First call entropy!")
+            self.first_entropy = False 
+
         # TODO(student): Compute the entropy of the action distribution.
         # Note: Think about whether to use .rsample() or .sample() here...
-        return ...
+        sampled_action = action_distribution.rsample()
+        entropy = -action_distribution.log_prob(sampled_action)
+        return entropy
+
+
+
 
     def actor_loss_reinforce(self, obs: torch.Tensor):
         batch_size = obs.shape[0]
 
         # TODO(student): Generate an action distribution
-        action_distribution: torch.distributions.Distribution = ...
-
+        action_distribution: torch.distributions.Distribution = self.actor(obs)
+        # print(action_distribution.batch_shape)
         with torch.no_grad():
             # TODO(student): draw num_actor_samples samples from the action distribution for each batch element
-            action = ...
+            action = action_distribution.sample(sample_shape=(self.num_actor_samples,))
             assert action.shape == (
                 self.num_actor_samples,
                 batch_size,
@@ -258,7 +339,10 @@ class SoftActorCritic(nn.Module):
             ), action.shape
 
             # TODO(student): Compute Q-values for the current state-action pair
-            q_values = ...
+            q_values = self.critic(obs[None].expand(self.num_actor_samples, -1, -1), action)
+            # print("obs: ", obs.shape)
+            # print("action: ", action.shape)
+            # print("q_values: ", q_values.shape)
             assert q_values.shape == (
                 self.num_critic_networks,
                 self.num_actor_samples,
@@ -266,15 +350,21 @@ class SoftActorCritic(nn.Module):
             ), q_values.shape
 
             # Our best guess of the Q-values is the mean of the ensemble
-            q_values = torch.mean(q_values, axis=0)
+            q_values = torch.mean(q_values, dim=0)
             advantage = q_values
 
         # Do REINFORCE: calculate log-probs and use the Q-values
         # TODO(student)
-        log_probs = ...
-        loss = ...
+        log_probs = action_distribution.log_prob(action)
+        torch.nan_to_num_(log_probs, nan=0.0, posinf=0.0, neginf=0.0)
+        # print("advantage: ", advantage.shape)
+        # print("log_probs: ", log_probs.shape)
+        loss = -torch.mean(log_probs * advantage)
+        # print("entropy: ", self.entropy(action_distribution).shape)
 
         return loss, torch.mean(self.entropy(action_distribution))
+    
+
 
     def actor_loss_reparametrize(self, obs: torch.Tensor):
         batch_size = obs.shape[0]
@@ -284,35 +374,64 @@ class SoftActorCritic(nn.Module):
 
         # TODO(student): Sample actions
         # Note: Think about whether to use .rsample() or .sample() here...
-        action = ...
+        action = action_distribution.rsample(sample_shape=(self.num_actor_samples,))
 
         # TODO(student): Compute Q-values for the sampled state-action pair
-        q_values = ...
+        q_values = self.critic(obs[None].repeat((self.num_actor_samples, 1, 1)), action)
 
         # TODO(student): Compute the actor loss
-        loss = ...
+        loss = -torch.mean(q_values)
 
         return loss, torch.mean(self.entropy(action_distribution))
+
+
+
+
 
     def update_actor(self, obs: torch.Tensor):
         """
         Update the actor by one gradient step using either REPARAMETRIZE or REINFORCE.
         """
+        # print("actor_gradient_type: ", self.actor_gradient_type)
+        if self.first_actor_gradient_type:
+            print("actor_gradient_type: ", self.actor_gradient_type)
+            print("use_entropy_bonus: ", self.use_entropy_bonus)
+            print("self.temperature: ", self.temperature)
+            print("self.train_actor_entropy_bonus_only:: ", self.train_actor_entropy_bonus_only)
+            self.first_actor_gradient_type = False 
 
-        if self.actor_gradient_type == "reparametrize":
-            loss, entropy = self.actor_loss_reparametrize(obs)
-        elif self.actor_gradient_type == "reinforce":
-            loss, entropy = self.actor_loss_reinforce(obs)
 
-        # Add entropy if necessary
-        if self.use_entropy_bonus:
-            loss -= self.temperature * entropy
+        if self.train_actor_entropy_bonus_only:
+            # Berechne die Entropie (ohne andere Optimierungsziele wie Q-Werte oder Rewards)
+            action_distribution: torch.distributions.Distribution = self.actor(obs)
+            entropy = self.entropy(action_distribution)
+            if self.use_entropy_bonus:
+                loss = -self.temperature * entropy.mean()
 
-        self.actor_optimizer.zero_grad()
-        loss.backward()
-        self.actor_optimizer.step()
+            self.actor_optimizer.zero_grad()
+            loss.backward()
+            self.actor_optimizer.step()
+            return {"actor_loss": loss.item(), "entropy": entropy.mean().item()}
 
-        return {"actor_loss": loss.item(), "entropy": entropy.item()}
+        else:    
+            if self.actor_gradient_type == "reparametrize":
+                loss, entropy = self.actor_loss_reparametrize(obs)
+            elif self.actor_gradient_type == "reinforce":
+                loss, entropy = self.actor_loss_reinforce(obs)
+            
+            if self.use_entropy_bonus:
+                loss -= self.temperature * entropy    
+
+            self.actor_optimizer.zero_grad()
+            loss.backward()
+            self.actor_optimizer.step()
+            return {"actor_loss": loss.item(), "entropy": entropy.item()}       
+
+
+
+
+
+
 
     def update_target_critic(self):
         self.soft_update_target_critic(1.0)
@@ -334,23 +453,37 @@ class SoftActorCritic(nn.Module):
         next_observations: torch.Tensor,
         dones: torch.Tensor,
         step: int,
-    ):
+        ):
         """
         Update the actor and critic networks.
         """
 
+        if self.first_update:
+            print("First call to update!")
+            self.first_update = False 
+    
+
         critic_infos = []
         # TODO(student): Update the critic for num_critic_upates steps, and add the output stats to critic_infos
-
+        critic_infos = [self.update_critic(obs=observations, action=actions, reward=rewards, next_obs=next_observations, done=dones) for _ in range(self.num_critic_updates)]
+        
+        
+        
         # TODO(student): Update the actor
-        actor_info = ...
+        actor_info = self.update_actor(obs=observations)
 
+        
+        
+        
         # TODO(student): Perform either hard or soft target updates.
         # Relevant variables:
         #  - step
         #  - self.target_update_period (None when using soft updates)
         #  - self.soft_target_update_rate (None when using hard updates)
-
+        if self.target_update_period is not None and step % self.target_update_period == 0:
+            self.update_target_critic()
+        elif self.soft_target_update_rate is not None:
+            self.soft_update_target_critic(self.soft_target_update_rate)
         # Average the critic info over all of the steps
         critic_info = {
             k: np.mean([info[k] for info in critic_infos]) for k in critic_infos[0]

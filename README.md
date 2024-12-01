@@ -226,5 +226,89 @@ https://www.gymlibrary.dev/environments/mujoco/humanoid/
 
 
 
+#### Continuous Actions with Actor-Critic
+
+<img src="hw3/images/pendulum.png" width="800px">
+
+<img src="hw3/images/networks.png" width="800px">
+
+
+### Actor: Class MLP_Policy
+Take an observation and output a distribution over actions. Options depending on config file.
+
+<img src="hw3/images/MLPPolicyActor.png" width="800px">
+
+
+### Critics: Class StateActionCritic
+
+Critic: Q(s,a)≈r+γQ(s′,a′)
+
+Mehrere Critic-Netzwerke können verwendet werden, z. B. für Double Q-Learning oder Redundant Q-Learning
+Ein Critic ist ein vollständig verbundenes neuronales Netzwerk (MLP), das die Eingabe (s,a)(s,a) verarbeitet und einen einzigen QQ-Wert ausgibt.
+
+Mechanismen zum Einsatz mehrerer Critic-Netzwerke
+- Unabhängige QQ-Netzwerke
+- Minimale QQ-Schätzung (Clipped Double Q):
+- Mittelwert der QQ-Schätzungen
+- REDQ (Redundant Q-Learning)
+
+Jedes Critic-Netzwerk wird separat trainiert und liefert eine Schätzung für Q(s,a)Q(s,a).
+
+Update Critic:
+
+<img src="hw3/images/updatecritic.png" width="800px">
+
+
+### Target_critics: Class StateActionCritic
+
+Die Target Critic-Netzwerke werden für das Bootstrapping verwendet. Sie liefern stabile Zielwerte für die Bellman-Gleichung.
+
+y=r+γ(1−d)Qtarget​(s′,a′)
+
+Updates:
+
+Soft Update: Die Target-Netzwerke werden langsam an die Critic-Netzwerke angepasst (Polyak averaging):
+    θ′←τθ+(1−τ)θ′
+
+Hard Update: Die Target-Netzwerke werden periodisch vollständig auf die Werte der Critic-Netzwerke gesetzt:
+    θ′←θ
+
+
+<img src="hw3/images/updatetarget.png" width="800px">
+
+
+### Entropy 
+In continuous spaces, we have several options for generating exploration noise. One of the most common is providing an entropy bonus to encourage the actor to have high entropy (i.e. to
+be “more random”), scaled by a “temperature” coefficient β. 
+
+
+Testing Bootstrap:
+
+<img src="hw3/images/bootstrap1.png" width="800px">
+
+<img src="hw3/images/bootstrap2.png" width="800px">
+
+<img src="hw3/images/bootstrap3.png" width="800px">
+
+
+Testing entropy: 
+
+<img src="hw3/images/control_entropy.png" width="800px">
+
+
+Compare entropy if actor trained with actor loss only consists of the entropy bonus (lila) or without (yellow, pink), no maximizing return !
+
+
+<img src="hw3/images/entropy_plot.png" width="800px">
+
+
+
+For this experiment: num_critic_networks=1
+
+
+
+
+
+
 
 

@@ -1,4 +1,6 @@
 import os
+import sys
+sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
 import time
 import yaml
 
@@ -46,29 +48,51 @@ def run_training_loop(config: dict, logger: Logger, args: argparse.Namespace):
     ob_shape = env.observation_space.shape
     ac_dim = env.action_space.shape[0]
 
+    print("ob_shape: ", ob_shape)
+    print("ac_dim: ", ac_dim)
+
     # simulation timestep, will be used for video saving
     if "model" in dir(env):
         fps = 1 / env.model.opt.timestep
     else:
         fps = env.env.metadata["render_fps"]
-
+    print("fps={}".format(fps))
     # initialize agent
+    
+
+    print("Config used for SoftActorCritic initialization:")
+    print("agent_kwargs:")
+    print(config["agent_kwargs"])
+
+
     agent = SoftActorCritic(
         ob_shape,
         ac_dim,
         **config["agent_kwargs"],
     )
 
+    print("agent: ", agent)
+
     replay_buffer = ReplayBuffer(config["replay_buffer_capacity"])
 
     observation = env.reset()
 
     for step in tqdm.trange(config["total_steps"], dynamic_ncols=True):
+        
+        """
+        In den ersten config["random_steps"] Schritten wird eine zufällige Aktion aus dem Aktionsraum der Umgebung ausgewählt.
+        Dies dient dazu, die ersten Erfahrungen (Transitions) in der Replay-Buffer zu sammeln.
+        Sobald die Zufallsphase vorbei ist, wird die Aktion vom Actor-Netzwerk (Policy) des Agents berechnet.
+        """
         if step < config["random_steps"]:
+            #print("random_steps")
             action = env.action_space.sample()
-        else:
+        else:            
             # TODO(student): Select an action
-            action = ...
+            #print("get_action")
+            action = agent.get_action(observation=observation)
+
+        #print("action: ", action)
 
         # Step the environment and add the data to the replay buffer
         next_observation, reward, done, info = env.step(action)
@@ -89,10 +113,16 @@ def run_training_loop(config: dict, logger: Logger, args: argparse.Namespace):
 
         # Train the agent
         if step >= config["training_starts"]:
+            
             # TODO(student): Sample a batch of config["batch_size"] transitions from the replay buffer
-            batch = ...
-            update_info = ...
+            batch = ptu.from_numpy(replay_buffer.sample(batch_size=config["batch_size"]))
+            
+            update_info = agent.update(observations=batch["observations"], actions=batch["actions"], 
+                                       rewards=batch["rewards"], next_observations=batch["next_observations"], 
+                                       dones=batch["dones"], step=step)
 
+            
+            
             # Logging
             update_info["actor_lr"] = agent.actor_lr_scheduler.get_last_lr()[0]
             update_info["critic_lr"] = agent.critic_lr_scheduler.get_last_lr()[0]
@@ -133,7 +163,7 @@ def run_training_loop(config: dict, logger: Logger, args: argparse.Namespace):
                     ep_len,
                     render=True,
                 )
-
+                print("video is logging...")
                 logger.log_paths_as_videos(
                     video_trajectories,
                     step,

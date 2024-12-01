@@ -28,6 +28,10 @@ class MLPPolicy(nn.Module):
     ):
         super().__init__()
 
+        print(f"Initializing MLPPolicy with: ac_dim={ac_dim}, ob_dim={ob_dim}, discrete={discrete}, "
+          f"n_layers={n_layers}, layer_size={layer_size}, use_tanh={use_tanh}, "
+          f"state_dependent_std={state_dependent_std}, fixed_std={fixed_std}")
+
         self.use_tanh = use_tanh
         self.discrete = discrete
         self.state_dependent_std = state_dependent_std
