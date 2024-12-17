@@ -69,6 +69,9 @@ class ModelBasedAgent(nn.Module):
             "obs_delta_std", torch.ones(self.ob_dim, device=ptu.device)
         )
 
+
+
+
     def update(self, i: int, obs: np.ndarray, acs: np.ndarray, next_obs: np.ndarray):
         """
         Update self.dynamics_models[i] using the given batch of data.
@@ -89,13 +92,26 @@ class ModelBasedAgent(nn.Module):
         # directly
         # HINT 3: make sure to avoid any risk of dividing by zero when
         # normalizing vectors by adding a small number to the denominator!
-        loss = ...
 
+        # Schritt 2: Beobachtung und Aktion zusammenführen
+        obs_acs = torch.cat([obs, acs], dim=1)    
+        # Schritt 3: Eingabe normalisieren
+        obs_acs_norm = (obs_acs - self.obs_acs_mean) / (self.obs_acs_std + 1e-8)
+        # Schritt 4: Beobachtungsdeltas berechnen
+        delta = next_obs - obs
+        # Schritt 5: Deltas normalisieren
+        delta_norm = (delta - self.obs_delta_mean) / (self.obs_delta_std + 1e-8)
+        # Schritt 6: Vorhersage des Modells für die Deltas
+        pred_delta_norm = self.dynamics_models[i](obs_acs_norm)
+        # Schritt 7: Verlust berechnen
+        loss = self.loss_fn(pred_delta_norm, delta_norm)
+        # Schritt 8: Optimierung durchführen
         self.optimizer.zero_grad()
         loss.backward()
         self.optimizer.step()
-
+        # Schritt 9: Verlustwert zurückgeben
         return ptu.to_numpy(loss)
+
 
     @torch.no_grad()
     def update_statistics(self, obs: np.ndarray, acs: np.ndarray, next_obs: np.ndarray):
@@ -110,11 +126,19 @@ class ModelBasedAgent(nn.Module):
         obs = ptu.from_numpy(obs)
         acs = ptu.from_numpy(acs)
         next_obs = ptu.from_numpy(next_obs)
-        # TODO(student): update the statistics
-        self.obs_acs_mean = ...
-        self.obs_acs_std = ...
-        self.obs_delta_mean = ...
-        self.obs_delta_std = ...
+        
+        
+        # Schritt 2: Beobachtungen und Aktionen kombinieren
+        obs_acs = torch.cat([obs, acs], dim=1)
+        # Schritt 3: Berechne Beobachtungs-Deltas
+        delta = next_obs - obs
+        # Schritt 4: Berechne Mittelwerte
+        self.obs_acs_mean = obs_acs.mean(dim=0)
+        self.obs_delta_mean = delta.mean(dim=0)
+        # Schritt 5: Berechne Standardabweichungen
+        self.obs_acs_std = obs_acs.std(dim=0) + 1e-8
+        self.obs_delta_std = delta.std(dim=0) + 1e-8
+
 
     @torch.no_grad()
     def get_dynamics_predictions(
@@ -136,6 +160,8 @@ class ModelBasedAgent(nn.Module):
         # Same hints as `update` above, avoid nasty divide-by-zero errors when
         # normalizing inputs!
         return ptu.to_numpy(pred_next_obs)
+    
+
 
     def evaluate_action_sequences(self, obs: np.ndarray, action_sequences: np.ndarray):
         """
@@ -216,6 +242,7 @@ class ModelBasedAgent(nn.Module):
         elif self.mpc_strategy == "cem":
             elite_mean, elite_std = None, None
             for i in range(self.cem_num_iters):
+                pass
                 # TODO(student): implement the CEM algorithm
                 # HINT: you need a special case for i == 0 to initialize
                 # the elite mean and std

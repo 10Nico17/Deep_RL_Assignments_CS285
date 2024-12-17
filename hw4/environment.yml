@@ -1,0 +1,21 @@
+name: hw4  # Wähle hier einen Namen für deine Umgebung
+channels:
+  - conda-forge  # Wichtig, um sicherzustellen, dass du die richtigen Pakete bekommst
+  - defaults
+dependencies:
+  - python=3.8  # oder eine andere Version, falls gewünscht
+  - mujoco==2.2.0
+  - gym==0.25.2
+  - tensorboard==2.10.0
+  - tensorboardX==2.5.1
+  - matplotlib==3.5.3
+  - ipython==7.34.0
+  - moviepy==1.0.3
+  - pyvirtualdisplay==3.0
+  - pytorch==1.13.1  # Verwende die pytorch-Version, die du benötigst
+  - opencv-python==4.6.0.66
+  - ipdb==0.13.9
+  - swig==4.0.2
+  - box2d-py==2.3.8
+  - tqdm==4.66.1
+  - pyyaml==6.0.1

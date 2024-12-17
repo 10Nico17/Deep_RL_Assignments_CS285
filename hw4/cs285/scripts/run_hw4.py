@@ -1,3 +1,6 @@
+"""
+ tensorboard --logdir=.
+"""
 import os
 import time
 from typing import Optional
@@ -8,6 +11,7 @@ from cs285 import envs
 from cs285.agents.model_based_agent import ModelBasedAgent
 from cs285.agents.soft_actor_critic import SoftActorCritic
 from cs285.infrastructure.replay_buffer import ReplayBuffer
+
 import cs285.env_configs
 
 import os
@@ -31,6 +35,7 @@ from cs285.envs import register_envs
 register_envs()
 
 
+# later
 def collect_mbpo_rollout(
     env: gym.Env,
     mb_agent: ModelBasedAgent,
@@ -62,6 +67,10 @@ def collect_mbpo_rollout(
     }
 
 
+
+
+
+
 def run_training_loop(
     config: dict, logger: Logger, args: argparse.Namespace, sac_config: Optional[dict]
 ):
@@ -69,15 +78,22 @@ def run_training_loop(
     np.random.seed(args.seed)
     torch.manual_seed(args.seed)
     ptu.init_gpu(use_gpu=not args.no_gpu, gpu_id=args.which_gpu)
-
+ 
+    
     # make the gym environment
     env = config["make_env"]()
     eval_env = config["make_env"]()
     render_env = config["make_env"](render=True)
 
-    ep_len = config["ep_len"] or env.spec.max_episode_steps
+    # Ausgabe der Action- und Observation-Spaces
+    print("Observation Space:", env.observation_space)
+    print("Action Space:", env.action_space)
 
+
+    ep_len = config["ep_len"] or env.spec.max_episode_steps
     discrete = isinstance(env.action_space, gym.spaces.Discrete)
+    print("discrete: ", discrete)
+
     assert (
         not discrete
     ), "Our MPC implementation only supports continuous action spaces."
@@ -90,15 +106,25 @@ def run_training_loop(
     else:
         fps = 2
 
+
+
     # initialize agent
     mb_agent = ModelBasedAgent(
         env,
         **config["agent_kwargs"],
     )
     actor_agent = mb_agent
+    print("Network ensemble_siz: ", actor_agent.ensemble_size)
+    print("Dynamikmodelle im Ensemble:")
+    for idx, model in enumerate(actor_agent.dynamics_models):
+        print(f"Netzwerk {idx}:")
+        print(model)
+
+
+
+
 
     replay_buffer = ReplayBuffer(config["replay_buffer_capacity"])
-
     # if doing MBPO, initialize SAC and make that our main agent that we use to
     # collect data and evaluate
     if sac_config is not None:
@@ -109,21 +135,30 @@ def run_training_loop(
         )
         sac_replay_buffer = ReplayBuffer(sac_config["replay_buffer_capacity"])
         actor_agent = sac_agent
+        print("actor_agent SAC: ", actor_agent)
 
     total_envsteps = 0
 
     for itr in range(config["num_iters"]):
         print(f"\n\n********** Iteration {itr} ************")
         # collect data
-        print("Collecting data...")
+        print("Collecting data...")   
         if itr == 0:
-            # TODO(student): collect at least config["initial_batch_size"] transitions with a random policy
-            # HINT: Use `utils.RandomPolicy` and `utils.sample_trajectories`
-            trajs, envsteps_this_batch = ...
+            # Initial data collection using random policy
+            print("Random policy")
+            random_policy = utils.RandomPolicy(env)
+            trajs, envsteps_this_batch = utils.sample_trajectories(
+                env, random_policy, config["initial_batch_size"], ep_len
+            )
         else:
-            # TODO(student): collect at least config["batch_size"] transitions with our `actor_agent`
-            trajs, envsteps_this_batch = ...
-
+            # Data collection using actor agent
+            print("Actor agent")
+            trajs, envsteps_this_batch = utils.sample_trajectories(
+                env, actor_agent, config["batch_size"], ep_len
+            )        
+        
+        
+        
         total_envsteps += envsteps_this_batch
         logger.log_scalar(total_envsteps, "total_envsteps", itr)
 
@@ -139,6 +174,7 @@ def run_training_loop(
 
         # if doing MBPO, add the collected data to the SAC replay buffer as well
         if sac_config is not None:
+            print("MBPO")
             for traj in trajs:
                 sac_replay_buffer.batched_insert(
                     observations=traj["observation"],
@@ -155,17 +191,22 @@ def run_training_loop(
             next_obs=replay_buffer.next_observations[: len(replay_buffer)],
         )
 
-        # train agent
+        
         print("Training agent...")
         all_losses = []
-        for _ in tqdm.trange(
-            config["num_agent_train_steps_per_iter"], dynamic_ncols=True
-        ):
+        for _ in tqdm.trange(config["num_agent_train_steps_per_iter"], dynamic_ncols=True):
             step_losses = []
-            # TODO(student): train the dynamics models
-            # HINT: train each dynamics model in the ensemble with a *different* batch of transitions!
-            # Use `replay_buffer.sample` with config["train_batch_size"].
+            # Iteriere über jedes Modell im Ensemble
+            for i, model in enumerate(mb_agent.dynamics_models):
+                batch = replay_buffer.sample(config["train_batch_size"])
+                obs, acs, next_obs = batch["observations"], batch["actions"], batch["next_observations"]
+                loss = mb_agent.update(i, obs, acs, next_obs)  # Update mit Index 'i'
+                #print(f"Model {i}, Loss: {loss}")  # Log den Verlust für jedes Modell
+                step_losses.append(loss)
             all_losses.append(np.mean(step_losses))
+        
+        print('all_losses: ', len(all_losses))
+
 
         # on iteration 0, plot the full learning curve
         if itr == 0:
@@ -175,8 +216,12 @@ def run_training_loop(
             plt.xlabel("Step")
             plt.savefig(os.path.join(logger._log_dir, "itr_0_loss_curve.png"))
 
+
+
         # log the average loss
         loss = np.mean(all_losses)
+        #loss = (all_losses)
+
         logger.log_scalar(loss, "dynamics_loss", itr)
 
         # for MBPO: now we need to train the SAC agent
@@ -261,14 +306,11 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--config_file", "-cfg", type=str, required=True)
     parser.add_argument("--sac_config_file", type=str, default=None)
-
     parser.add_argument("--eval_interval", "-ei", type=int, default=5000)
     parser.add_argument("--num_render_trajectories", "-nvid", type=int, default=0)
-
     parser.add_argument("--seed", type=int, default=1)
     parser.add_argument("--no_gpu", "-ngpu", action="store_true")
     parser.add_argument("--which_gpu", "-g", default=0)
-
     args = parser.parse_args()
 
     config = make_config(args.config_file)
