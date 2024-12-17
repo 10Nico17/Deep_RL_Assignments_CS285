@@ -25,6 +25,10 @@ from scripting_utils import make_logger, make_config
 
 import argparse
 
+"""
+ tensorboard --logdir=.
+
+"""
 
 def run_training_loop(config: dict, logger: Logger, args: argparse.Namespace):
     # set random seeds

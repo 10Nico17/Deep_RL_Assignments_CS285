@@ -111,8 +111,7 @@ class SoftActorCritic(nn.Module):
         self.first_entropy = True                    # Attribut für den ersten Aufruf
         self.first_actor_gradient_type = True
 
-
-        self.train_actor_entropy_bonus_only = False
+        self.train_actor_entropy_bonus_only = False    # only train entropy
 
     def get_action(self, observation: np.ndarray) -> np.ndarray:
         """
@@ -299,12 +298,6 @@ class SoftActorCritic(nn.Module):
             "target_values": target_values.mean().item(),
         }
 
-
-
-
-
-
-
     def entropy(self, action_distribution: torch.distributions.Distribution):
         """
         Compute the (approximate) entropy of the action distribution for each batch element.
@@ -322,7 +315,7 @@ class SoftActorCritic(nn.Module):
 
 
 
-
+    """
     def actor_loss_reinforce(self, obs: torch.Tensor):
         batch_size = obs.shape[0]
 
@@ -363,7 +356,69 @@ class SoftActorCritic(nn.Module):
         # print("entropy: ", self.entropy(action_distribution).shape)
 
         return loss, torch.mean(self.entropy(action_distribution))
+    """
     
+
+    
+    def actor_loss_reinforce(self, obs: torch.Tensor):
+        batch_size = obs.shape[0]
+
+        # Generate an action distribution from the actor
+        action_distribution: torch.distributions.Distribution = self.actor(obs)
+
+        with torch.no_grad():
+            # Draw num_actor_samples samples from the action distribution for each batch element
+            action = action_distribution.sample((self.num_actor_samples,))  # Shape: (num_actor_samples, batch_size, action_dim)
+            assert action.shape == (
+                self.num_actor_samples,
+                batch_size,
+                self.action_dim,
+            ), f"Action shape mismatch: {action.shape}"
+
+            # Compute Q-values for the current state-action pair
+            q_values = self.critic(
+                obs.repeat(self.num_actor_samples, 1, 1).reshape(-1, *obs.shape[1:]),
+                action.view(-1, self.action_dim),
+            ).view(self.num_critic_networks, self.num_actor_samples, batch_size)
+            
+            
+            
+            assert q_values.shape == (
+                self.num_critic_networks,
+                self.num_actor_samples,
+                batch_size,
+            ), f"Q-values shape mismatch: {q_values.shape}"
+
+            # Our best guess of the Q-values is the mean of the ensemble
+            q_values = torch.mean(q_values, axis=0)  # Shape: (num_actor_samples, batch_size)
+            advantage = q_values.mean(dim=0)  # Shape: (batch_size,)
+
+        # Calculate log-probs and ensure shapes are correct
+        log_probs = action_distribution.log_prob(action)  # Shape: (num_actor_samples, batch_size)
+        if log_probs.ndim == 2:  # If action_dim is automatically summed
+            assert log_probs.shape == (
+                self.num_actor_samples,
+                batch_size,
+            ), f"log_probs shape mismatch: {log_probs.shape}"
+        else:  # Manually sum over action_dim
+            log_probs = log_probs.sum(-1)  # Shape: (num_actor_samples, batch_size)
+            assert log_probs.shape == (
+                self.num_actor_samples,
+                batch_size,
+            ), f"log_probs shape mismatch after summing: {log_probs.shape}"
+
+        # Compute REINFORCE loss as negative weighted log probabilities
+        loss = -(log_probs.mean(dim=0) * advantage).mean()
+
+        return loss, torch.mean(self.entropy(action_distribution))
+
+
+
+
+
+
+
+
 
 
     def actor_loss_reparametrize(self, obs: torch.Tensor):
@@ -397,7 +452,7 @@ class SoftActorCritic(nn.Module):
             print("actor_gradient_type: ", self.actor_gradient_type)
             print("use_entropy_bonus: ", self.use_entropy_bonus)
             print("self.temperature: ", self.temperature)
-            print("self.train_actor_entropy_bonus_only:: ", self.train_actor_entropy_bonus_only)
+            print("self.train_actor_entropy_bonus_only_to_test_entropy:: ", self.train_actor_entropy_bonus_only)
             self.first_actor_gradient_type = False 
 
 
@@ -426,12 +481,6 @@ class SoftActorCritic(nn.Module):
             loss.backward()
             self.actor_optimizer.step()
             return {"actor_loss": loss.item(), "entropy": entropy.item()}       
-
-
-
-
-
-
 
     def update_target_critic(self):
         self.soft_update_target_critic(1.0)

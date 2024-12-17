@@ -226,7 +226,7 @@ https://www.gymlibrary.dev/environments/mujoco/humanoid/
 
 
 
-#### Continuous Actions with Actor-Critic
+#### Continuous Actions with Soft-Actor-Critic:
 
 <img src="hw3/images/pendulum.png" width="800px">
 
@@ -282,7 +282,14 @@ In continuous spaces, we have several options for generating exploration noise. 
 be “more random”), scaled by a “temperature” coefficient β. 
 
 
-Testing Bootstrap:
+Testing:
+
+<pre style="font-size: 16px; font-weight: bold;">
+    python cs285/scripts/run_hw3_sac.py -cfg experiments/sac/sanity_pendulum.yaml
+</pre>
+
+
+Testing:
 
 <img src="hw3/images/bootstrap1.png" width="800px">
 
@@ -295,20 +302,42 @@ Testing entropy:
 
 <img src="hw3/images/control_entropy.png" width="800px">
 
-
 Compare entropy if actor trained with actor loss only consists of the entropy bonus (lila) or without (yellow, pink), no maximizing return !
 
 
 <img src="hw3/images/entropy_plot.png" width="800px">
 
-
-
 For this experiment: num_critic_networks=1
 
 
 
+python cs285/scripts/run_hw3_sac.py -cfg experiments/sac/sanity_invertedpendulum_reinforce.yaml
 
 
+python cs285/scripts/run_hw3_sac.py -cfg experiments/sac/sanity_invertedpendulum_reparametrize.yaml
 
 
+## Homework4:
+
+#### ENV: conda activate cs285hw3
+
+### Model-based Reinforcement Learning:
+- Learn Dynamic Model
+- Action Selection via random-shooting optimization and CEM
+- On-Policy data collection
+- Ensembles
+
+#### Task1:
+Collect a large dataset by executing random actions. Train a neural network dynamics model on this fixed
+dataset.
+
+<img src="hw4/images/DynamicModel.png" width="800px">
+
+MBRL with ensemble models:
+
+<img src="hw4/images/NNDynamics.png" width="800px">
+
+<pre style="font-size: 16px; font-weight: bold;">
+    python cs285/scripts/run_hw4.py -cfg experiments/mpc/halfcheetah_0_iter.yaml
+</pre>
 
