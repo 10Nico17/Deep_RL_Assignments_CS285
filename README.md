@@ -31,8 +31,7 @@
 
 <img src="hw1/images/dagger.gif" width="800px">
 
-
-
+############################################################################################################################################
 
 ## Homework 2:
 
@@ -96,8 +95,6 @@
 <img src="hw2/images/overview_cartpole_lb.png" width="800px">
 
 <img src="hw2/images/cartPole1.gif" width="800px">
-
-
 
 
 ### Task2, Using a Neural Network Baseline
@@ -186,6 +183,7 @@ https://www.gymlibrary.dev/environments/mujoco/humanoid/
     tensorboard --logdir=.
 </pre>
 
+############################################################################################################################################
 
 
 ## Homework 3:
@@ -356,9 +354,6 @@ model), and repeat.
 <img src="hw4/images/action_selection.png" width="800px">
 
 
-
-
-
 <pre style="font-size: 16px; font-weight: bold; width: 800px;">
 python cs285/scripts/run_hw4.py -cfg experiments/mpc/obstacles_1_iter.yaml
 </pre>
@@ -389,3 +384,74 @@ halfcheetah_multi_iter:
 
 <img src="hw4/images/dynamamicLoss.png" width="800px">
 
+
+#### Task4:
+Compare the performance of your MBRL algorithm as a function of three hyperparameters: the
+number of models in your ensemble, the number of random action sequences considered during each action
+selection, and the MPC planning horizon
+
+<pre style="font-size: 16px; font-weight: bold; width: 800px;">
+python cs285/scripts/run_hw4.py -cfg experiments/mpc/reacher_ablation.yaml
+</pre>
+
+fixed: num_layers: 2, hidden_size: 250, num_iters: 15, initial_batch_size: 5000, batch_size: 800, num_agent_train_steps_per_iter: 1000, num_eval_trajectories: 10, mpc_strategy: random
+
+1. mpc_num_action_sequences: 1000, mpc_horizon: 10, ensemble_size: 3
+    Average eval return: -259.5900037229883
+
+2. mpc_num_action_sequences: 1250, mpc_horizon: 10, ensemble_size: 3
+    Average eval return: -269.16030872614294
+
+3. mpc_num_action_sequences: 1000, mpc_horizon: 15, ensemble_size: 3
+    Average eval return: -279.0613245690755
+
+4. mpc_num_action_sequences: 1000, mpc_horizon: 10, ensemble_size: 6
+    Average eval return: -275.9346172796258
+
+5. mpc_num_action_sequences: 500, mpc_horizon: 10, ensemble_size: 3
+
+6. mpc_num_action_sequences: 1000, mpc_horizon: 5, ensemble_size: 3
+
+7. mpc_num_action_sequences: 1000, mpc_horizon: 10, ensemble_size: 1
+
+
+-> no changes
+
+<img src="hw4/images/task4Compare.png" width="800px">
+
+
+
+#### Task5:
+You will compare the performance of your MBRL algorithm with action selecting performed by random-
+shooting (what you have done up to this point) and CEM
+
+<img src="hw4/images/cem.png" width="800px">
+
+
+<pre style="font-size: 16px; font-weight: bold; width: 800px;">
+python cs285/scripts/run_hw4.py -cfg experiments/mpc/halfcheetah_cem.yaml
+</pre>
+
+
+#### Task6:
+In this homework you will also be implementing a variant of MBPO. Another way of leveraging the learned
+model is through generating additional samples to train the policy and value functions. Since RL often
+requires many environment interaction samples, which can be costly, we can use our learned model to generate
+additional samples to improve sample complexity. In MBPO, we build on your SAC implementation from HW3
+and use the learned model you implemented in the earlier questions for generating additional samples to train
+our SAC agent
+
+<pre style="font-size: 16px; font-weight: bold; width: 800px;">
+python cs285/scripts/run_hw4.py -cfg experiments/mpc/halfcheetah_mbpo.yaml --sac_config_file experiments/sac/halfcheetah_clipq.yaml
+</pre>
+
+1. Model-free SAC baseline: no additional rollouts from the learned model.
+2. Dyna (technically “dyna-style” - the original Dyna algorithm is a little different): add single-step rollouts
+from the model to the replay buffer and incorporate additional gradient steps per real world step.
+3. MBPO: add in 10-step rollouts from the model to the replay buffer and incorporate additional gradient
+steps per real world step
+
+
+<img src="hw4/images/task6.png" width="800px">
+
+############################################################################################################################################

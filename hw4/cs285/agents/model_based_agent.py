@@ -251,15 +251,40 @@ class ModelBasedAgent(nn.Module):
         
         
         elif self.mpc_strategy == "cem":
-            if not self.printed_cem_action:  
+            if not self.printed_cem_action:
                 print("CEM Action")
-                self.printed_cem_action = True  
+                self.printed_cem_action = True
 
-            elite_mean, elite_std = None, None
+            # Initialize mean and std for action sampling
+            elite_mean = np.zeros((self.mpc_horizon, self.ac_dim))
+            elite_std = np.ones((self.mpc_horizon, self.ac_dim))
+
             for i in range(self.cem_num_iters):
-                pass
-                # TODO(student): implement the CEM algorithm
-                # HINT: you need a special case for i == 0 to initialize
-                # the elite mean and std
+                if i == 0:
+                    # First iteration: sample uniformly
+                    action_sequences = np.random.uniform(
+                        self.env.action_space.low,
+                        self.env.action_space.high,
+                        size=(self.mpc_num_action_sequences, self.mpc_horizon, self.ac_dim),
+                    )
+                else:
+                    # Subsequent iterations: sample from Gaussian
+                    action_sequences = np.random.normal(
+                        loc=elite_mean, scale=elite_std, size=(self.mpc_num_action_sequences, self.mpc_horizon, self.ac_dim)
+                    )
+                    # Clip actions to action space bounds
+                    action_sequences = np.clip(
+                        action_sequences, self.env.action_space.low, self.env.action_space.high
+                    )
+                rewards = self.evaluate_action_sequences(obs, action_sequences)
+                assert rewards.shape == (self.mpc_num_action_sequences,)
+                elite_indices = np.argsort(rewards)[-self.cem_num_elites:]
+                elite_actions = action_sequences[elite_indices]
+                elite_mean = self.cem_alpha * elite_actions.mean(axis=0) + (1 - self.cem_alpha) * elite_mean
+                elite_std = self.cem_alpha * elite_actions.std(axis=0) + (1 - self.cem_alpha) * elite_std
+
+            # Use the mean of the final elite distribution as the best action sequence
+            return elite_mean[0]         
+    
         else:
             raise ValueError(f"Invalid MPC strategy '{self.mpc_strategy}'")

@@ -35,7 +35,10 @@ from cs285.envs import register_envs
 register_envs()
 
 
-# later
+
+debug_print_done = False
+
+
 def collect_mbpo_rollout(
     env: gym.Env,
     mb_agent: ModelBasedAgent,
@@ -50,6 +53,26 @@ def collect_mbpo_rollout(
         # Average the ensemble predictions directly to get the next observation.
         # Get the reward using `env.get_reward`.
 
+        # Aktion vom SAC-Agenten basierend auf der aktuellen Beobachtung holen
+        ac = sac_agent.get_action(ob)
+        global debug_print_done  
+        if not debug_print_done:
+            print("######################")
+            print("sac_agent: ", sac_agent)
+            debug_print_done = True
+
+        # Nächste Beobachtung mit dem dynamischen Modell (Ensemble) vorhersagen
+        ensemble_predictions = [
+            mb_agent.get_dynamics_predictions(i, obs=np.expand_dims(ob, axis=0), acs=np.expand_dims(ac, axis=0))
+            for i in range(mb_agent.ensemble_size)
+        ]
+        # Durchschnitt über die Ensemble-Vorhersagen bilden
+        next_ob = np.mean(ensemble_predictions, axis=0).squeeze()
+
+        # Belohnung basierend auf der Vorhersage und Aktion berechnen
+        rew, _ = env.get_reward(next_ob, ac)
+
+
         obs.append(ob)
         acs.append(ac)
         rewards.append(rew)
@@ -58,17 +81,14 @@ def collect_mbpo_rollout(
 
         ob = next_ob
 
+
     return {
         "observation": np.array(obs),
         "action": np.array(acs),
         "reward": np.array(rewards),
         "next_observation": np.array(next_obs),
         "done": np.array(dones),
-    }
-
-
-
-
+        }
 
 
 def run_training_loop(
@@ -251,6 +271,8 @@ def run_training_loop(
                     )
                 # train SAC
                 batch = sac_replay_buffer.sample(sac_config["batch_size"])
+                
+                """
                 sac_agent.update(
                     batch["observations"],
                     batch["actions"],
@@ -259,6 +281,19 @@ def run_training_loop(
                     batch["dones"],
                     i,
                 )
+                """
+
+                sac_agent.update(
+                    ptu.from_numpy(batch["observations"]),
+                    ptu.from_numpy(batch["actions"]),
+                    ptu.from_numpy(batch["rewards"]),
+                    ptu.from_numpy(batch["next_observations"]),
+                    ptu.from_numpy(batch["dones"]),
+                    i,
+                )
+
+
+
 
         # Run evaluation
         if config["num_eval_trajectories"] == 0:
