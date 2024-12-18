@@ -214,6 +214,7 @@ def run_training_loop(
             plt.title("Iteration 0: Dynamics Model Training Loss")
             plt.ylabel("Loss")
             plt.xlabel("Step")
+            print(f"Log directory: {logger._log_dir}")
             plt.savefig(os.path.join(logger._log_dir, "itr_0_loss_curve.png"))
 
 

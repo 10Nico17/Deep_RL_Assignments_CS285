@@ -317,6 +317,8 @@ python cs285/scripts/run_hw3_sac.py -cfg experiments/sac/sanity_invertedpendulum
 python cs285/scripts/run_hw3_sac.py -cfg experiments/sac/sanity_invertedpendulum_reparametrize.yaml
 
 
+############################################################################################################################################
+
 ## Homework4:
 
 #### ENV: conda activate cs285hw3
@@ -337,7 +339,53 @@ MBRL with ensemble models:
 
 <img src="hw4/images/NNDynamics.png" width="800px">
 
-<pre style="font-size: 16px; font-weight: bold;">
+<pre style="font-size: 16px; font-weight: bold; width: 800px;">
     python cs285/scripts/run_hw4.py -cfg experiments/mpc/halfcheetah_0_iter.yaml
 </pre>
+
+<img src="hw4/images/itr_0_loss_curve.png" width="800px">
+
+#### Task2:
+Action selection using your learned dynamics model and a given reward function.
+
+Model Predictice Control:
+We first collect data with our policy (which starts as random), we
+train our model on that collected data, we evaluating the resulting MPC policy (which now uses the trained
+model), and repeat.
+
+<img src="hw4/images/action_selection.png" width="800px">
+
+
+
+
+
+<pre style="font-size: 16px; font-weight: bold; width: 800px;">
+python cs285/scripts/run_hw4.py -cfg experiments/mpc/obstacles_1_iter.yaml
+</pre>
+
+Average eval return: -25.955617904663086
+
+#### Task3:
+
+MBRL algorithm with on-policy data collection and iterative model training.
+
+<pre style="font-size: 16px; font-weight: bold; width: 800px;">
+python cs285/scripts/run_hw4.py -cfg experiments/mpc/obstacles_multi_iter.yaml
+python cs285/scripts/run_hw4.py -cfg experiments/mpc/reacher_multi_iter.yaml
+python cs285/scripts/run_hw4.py -cfg experiments/mpc/halfcheetah_multi_iter.yaml
+</pre>
+
+obstacles_multi_iter: 
+    Average eval return:-26.595630645751953
+
+reacher_multi_iter:
+    Average eval return: -268.4715969465834
+
+halfcheetah_multi_iter: 
+    Average eval return: 421.34788151243447
+
+
+<img src="hw4/images/evalReturnTask3.png" width="800px">
+
+<img src="hw4/images/dynamamicLoss.png" width="800px">
 

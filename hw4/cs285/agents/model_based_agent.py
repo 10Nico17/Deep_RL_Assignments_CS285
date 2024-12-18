@@ -28,6 +28,9 @@ class ModelBasedAgent(nn.Module):
         self.cem_num_iters = cem_num_iters
         self.cem_num_elites = cem_num_elites
         self.cem_alpha = cem_alpha
+        self.printed_random_action = False  # Flag-Variable für "Random Action"
+        self.printed_cem_action = False  # Flag-Variable für "CEM Action"
+
 
         assert mpc_strategy in (
             "random",
@@ -159,6 +162,16 @@ class ModelBasedAgent(nn.Module):
         # HINT: make sure to *unnormalize* the NN outputs (observation deltas)
         # Same hints as `update` above, avoid nasty divide-by-zero errors when
         # normalizing inputs!
+        # Beobachtungen und Aktionen kombinieren und normalisieren
+
+        obs_acs = torch.cat([obs, acs], dim=1)
+        obs_acs_norm = (obs_acs - self.obs_acs_mean) / (self.obs_acs_std + 1e-8)
+        # Vorhersage des Modells für die normalisierten Deltas
+        pred_delta_norm = self.dynamics_models[i](obs_acs_norm)
+        # Denormalisierte Deltas berechnen
+        pred_delta = pred_delta_norm * self.obs_delta_std + self.obs_delta_mean
+        # Vorhersage des nächsten Zustands
+        pred_next_obs = obs + pred_delta
         return ptu.to_numpy(pred_next_obs)
     
 
@@ -185,38 +198,30 @@ class ModelBasedAgent(nn.Module):
         # We need to repeat our starting obs for each of the rollouts.
         obs = np.tile(obs, (self.ensemble_size, self.mpc_num_action_sequences, 1))
 
-        # TODO(student): for each batch of actions in in the horizon...
-        for acs in ...:
-            assert acs.shape == (self.mpc_num_action_sequences, self.ac_dim)
-            assert obs.shape == (
-                self.ensemble_size,
-                self.mpc_num_action_sequences,
-                self.ob_dim,
-            )
+        
+        
+        # Für jeden Zeitschritt der Horizon
+        for t in range(self.mpc_horizon):
+            acs = action_sequences[:, t, :]  # Aktionen für diesen Schritt
+            acs = np.tile(acs, (self.ensemble_size, 1, 1))  # Dupliziere für Ensemble
 
-            # TODO(student): predict the next_obs for each rollout
-            # HINT: use self.get_dynamics_predictions
-            next_obs = ...
-            assert next_obs.shape == (
-                self.ensemble_size,
-                self.mpc_num_action_sequences,
-                self.ob_dim,
-            )
+            # Vorhersage des nächsten Zustands
+            next_obs = np.stack([
+                self.get_dynamics_predictions(i, obs[i], acs[i])
+                for i in range(self.ensemble_size)
+            ])
 
-            # TODO(student): get the reward for the current step in each rollout
-            # HINT: use `self.env.get_reward`. `get_reward` takes 2 arguments:
-            # `next_obs` and `acs` with shape (n, ob_dim) and (n, ac_dim),
-            # respectively, and returns a tuple of `(rewards, dones)`. You can 
-            # ignore `dones`. You might want to do some reshaping to make
-            # `next_obs` and `acs` 2-dimensional.
-            rewards = ...
-            assert rewards.shape == (self.ensemble_size, self.mpc_num_action_sequences)
+            # Berechne Belohnungen
+            rewards, _ = self.env.get_reward(
+                next_obs.reshape(-1, self.ob_dim),
+                acs.reshape(-1, self.ac_dim)
+            )
+            rewards = rewards.reshape(self.ensemble_size, self.mpc_num_action_sequences)
 
             sum_of_rewards += rewards
-
-            obs = next_obs
-
-        # now we average over the ensemble dimension
+            obs = next_obs  # Aktuelle Beobachtung aktualisieren    
+        
+         # now we average over the ensemble dimension
         return sum_of_rewards.mean(axis=0)
 
     def get_action(self, obs: np.ndarray):
@@ -234,12 +239,22 @@ class ModelBasedAgent(nn.Module):
         )
 
         if self.mpc_strategy == "random":
+            if not self.printed_random_action:  
+                print("Random Action")
+                self.printed_random_action = True  
+
             # evaluate each action sequence and return the best one
             rewards = self.evaluate_action_sequences(obs, action_sequences)
             assert rewards.shape == (self.mpc_num_action_sequences,)
             best_index = np.argmax(rewards)
             return action_sequences[best_index][0]
+        
+        
         elif self.mpc_strategy == "cem":
+            if not self.printed_cem_action:  
+                print("CEM Action")
+                self.printed_cem_action = True  
+
             elite_mean, elite_std = None, None
             for i in range(self.cem_num_iters):
                 pass

@@ -3,3 +3,5 @@ HW1_ENV/
 
 hw2/data/Humanoid/q2_pg_humanoid_Humanoid-v4_17-11-2024_13-47-36/events.out.tfevents.1731847656.DAHL
 *.tfevents
+hw4/cs285/scripts/run_hw42.py
+hw4/cs285/agents/model_based_agent2.py
