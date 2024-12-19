@@ -55,11 +55,14 @@ def collect_mbpo_rollout(
 
         # Aktion vom SAC-Agenten basierend auf der aktuellen Beobachtung holen
         ac = sac_agent.get_action(ob)
+        
+        
         global debug_print_done  
         if not debug_print_done:
             print("######################")
             print("sac_agent: ", sac_agent)
             debug_print_done = True
+        
 
         # Nächste Beobachtung mit dem dynamischen Modell (Ensemble) vorhersagen
         ensemble_predictions = [
@@ -133,21 +136,26 @@ def run_training_loop(
         env,
         **config["agent_kwargs"],
     )
+    
     actor_agent = mb_agent
     print("Network ensemble_siz: ", actor_agent.ensemble_size)
-    print("Dynamikmodelle im Ensemble:")
+    
+    
+    print("Dynamikmodelle ensemble:")
     for idx, model in enumerate(actor_agent.dynamics_models):
         print(f"Netzwerk {idx}:")
         print(model)
 
 
 
-
-
     replay_buffer = ReplayBuffer(config["replay_buffer_capacity"])
+
+    
+    
     # if doing MBPO, initialize SAC and make that our main agent that we use to
     # collect data and evaluate
     if sac_config is not None:
+        print("SAC")
         sac_agent = SoftActorCritic(
             env.observation_space.shape,
             env.action_space.shape[0],
@@ -155,9 +163,12 @@ def run_training_loop(
         )
         sac_replay_buffer = ReplayBuffer(sac_config["replay_buffer_capacity"])
         actor_agent = sac_agent
-        print("actor_agent SAC: ", actor_agent)
+        print("Actor_agent SAC: ", actor_agent)
 
     total_envsteps = 0
+
+
+
 
     for itr in range(config["num_iters"]):
         print(f"\n\n********** Iteration {itr} ************")
@@ -172,13 +183,16 @@ def run_training_loop(
             )
         else:
             # Data collection using actor agent
-            print("Actor agent")
+            print("Collecting data with actor agent")
             trajs, envsteps_this_batch = utils.sample_trajectories(
                 env, actor_agent, config["batch_size"], ep_len
             )        
         
         
         
+
+
+
         total_envsteps += envsteps_this_batch
         logger.log_scalar(total_envsteps, "total_envsteps", itr)
 
@@ -192,9 +206,12 @@ def run_training_loop(
                 dones=traj["done"],
             )
 
+
+
+
         # if doing MBPO, add the collected data to the SAC replay buffer as well
         if sac_config is not None:
-            print("MBPO")
+            print("MBPO: add the collected data to the SAC replay buffer as well")
             for traj in trajs:
                 sac_replay_buffer.batched_insert(
                     observations=traj["observation"],
@@ -204,12 +221,16 @@ def run_training_loop(
                     dones=traj["done"],
                 )
 
-        # update agent's statistics with the entire replay buffer
+
+
+        # update agent's statistics with the entire replay buffer        
         mb_agent.update_statistics(
             obs=replay_buffer.observations[: len(replay_buffer)],
             acs=replay_buffer.actions[: len(replay_buffer)],
             next_obs=replay_buffer.next_observations[: len(replay_buffer)],
         )
+
+
 
         
         print("Training agent...")
@@ -226,6 +247,8 @@ def run_training_loop(
             all_losses.append(np.mean(step_losses))
         
         print('all_losses: ', len(all_losses))
+
+
 
 
         # on iteration 0, plot the full learning curve
@@ -247,7 +270,7 @@ def run_training_loop(
 
         # for MBPO: now we need to train the SAC agent
         if sac_config is not None:
-            print("Training SAC agent...")
+            print("Training SAC agent")
             for i in tqdm.trange(
                 sac_config["num_agent_train_steps_per_iter"], dynamic_ncols=True
             ):

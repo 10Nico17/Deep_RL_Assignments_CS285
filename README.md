@@ -433,7 +433,10 @@ python cs285/scripts/run_hw4.py -cfg experiments/mpc/halfcheetah_cem.yaml
 </pre>
 
 
-#### Task6:
+#### Task6:  Model-Based Policy Optimization (MBPO)
+
+<div style="max-width: 800px;">
+
 In this homework you will also be implementing a variant of MBPO. Another way of leveraging the learned
 model is through generating additional samples to train the policy and value functions. Since RL often
 requires many environment interaction samples, which can be costly, we can use our learned model to generate
@@ -441,17 +444,49 @@ additional samples to improve sample complexity. In MBPO, we build on your SAC i
 and use the learned model you implemented in the earlier questions for generating additional samples to train
 our SAC agent
 
+Learn Policy:
+<img src="hw4/images/SACagent.png" width="800px">
+
 <pre style="font-size: 16px; font-weight: bold; width: 800px;">
 python cs285/scripts/run_hw4.py -cfg experiments/mpc/halfcheetah_mbpo.yaml --sac_config_file experiments/sac/halfcheetah_clipq.yaml
 </pre>
 
-1. Model-free SAC baseline: no additional rollouts from the learned model.
-2. Dyna (technically “dyna-style” - the original Dyna algorithm is a little different): add single-step rollouts
-from the model to the replay buffer and incorporate additional gradient steps per real world step.
-3. MBPO: add in 10-step rollouts from the model to the replay buffer and incorporate additional gradient
-steps per real world step
 
+The different settings (Model-Free SAC, Dyna, MBPO) differ in how and from where the training data originates.
+
+
+
+1. (grey) Model-free SAC baseline: no additional rollouts from the learned model.
+Model-Free SAC Baseline: SAC agent is trained directly on real interactions with the environment.The replay buffer of the SAC agent only contains real observations, actions and rewards. There is no additional use of learnt models
+
+2. (blue) Dyna (technically “dyna-style” - the original Dyna algorithm is a little different): add single-step rollouts
+from the model to the replay buffer and incorporate additional gradient steps per real world step. Here, single-step rollouts are generated with the learnt dynamic model and added to the replay buffer of the SAC agent.
+This additional data improves the sampling efficiency as the SAC agent sees not only real but also simulated data.
+For each real interaction in the environment, additional gradient steps are performed to further optimise the policy.
+The SAC agent optimises its policy based on the mix of data.
+
+<img src="hw4/images/Dyna2.png" width="800px">
+
+
+3. (pink) MBPO: add in 10-step rollouts from the model to the replay buffer and incorporate additional gradient
+steps per real world step: Here, longer, multi-step rollouts (e.g. 10 steps) are generated with the dynamic model and added to the replay buffer. These simulated rollouts provide even more data, which is used to train the SAC agent.
+Again, additional gradient steps are performed per real environment interaction. The SAC agent processes both the real and simulated data to learn a better policy. The multi-step rollouts are more challenging as errors in the dynamics model prediction can accumulate over several steps.
+
+<img src="hw4/images/MPO.png" width="800px">
+
+<img src="hw4/images/mbpo1.png" width="800px">
+
+<img src="hw4/images/mbpo2.png" width="800px">
+
+
+Overview modules:
+<img src="hw4/images/offpolicy.png" width="800px">
+
+
+
+Results:
 
 <img src="hw4/images/task6.png" width="800px">
 
 ############################################################################################################################################
+</div>
