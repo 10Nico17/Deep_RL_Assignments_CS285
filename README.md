@@ -1,8 +1,7 @@
-#### Source of Exercises: Berkeley CS 285: Deep Reinforcement Learning, Decision Making, and Control
-
-
+#### Source: https://rail.eecs.berkeley.edu/deeprlcourse/
 
 ## Homework 1:
+<div style="max-width: 800px;">
 
 ### Behavioral Cloning
 
@@ -31,9 +30,11 @@
 
 <img src="hw1/images/dagger.gif" width="800px">
 
-############################################################################################################################################
+</div>
+######################################################################################
 
 ## Homework 2:
+<div style="max-width: 800px;">
 
 ##### Environment1:
 <img src="hw2/images/env1.png" alt="Environment 1" width="800px">
@@ -183,10 +184,11 @@ https://www.gymlibrary.dev/environments/mujoco/humanoid/
     tensorboard --logdir=.
 </pre>
 
-############################################################################################################################################
-
+</div>
+######################################################################################
 
 ## Homework 3:
+<div style="max-width: 800px;">
 
 #### Basic Q-Learning, basic DQN algorithm
 
@@ -314,10 +316,11 @@ python cs285/scripts/run_hw3_sac.py -cfg experiments/sac/sanity_invertedpendulum
 
 python cs285/scripts/run_hw3_sac.py -cfg experiments/sac/sanity_invertedpendulum_reparametrize.yaml
 
-
-############################################################################################################################################
+</div>
+######################################################################################
 
 ## Homework4:
+<div style="max-width: 800px;">
 
 #### ENV: conda activate cs285hw3
 
@@ -408,17 +411,9 @@ fixed: num_layers: 2, hidden_size: 250, num_iters: 15, initial_batch_size: 5000,
 4. mpc_num_action_sequences: 1000, mpc_horizon: 10, ensemble_size: 6
     Average eval return: -275.9346172796258
 
-5. mpc_num_action_sequences: 500, mpc_horizon: 10, ensemble_size: 3
-
-6. mpc_num_action_sequences: 1000, mpc_horizon: 5, ensemble_size: 3
-
-7. mpc_num_action_sequences: 1000, mpc_horizon: 10, ensemble_size: 1
-
-
--> no changes
+-> no improvement
 
 <img src="hw4/images/task4Compare.png" width="800px">
-
 
 
 #### Task5:
@@ -434,8 +429,6 @@ python cs285/scripts/run_hw4.py -cfg experiments/mpc/halfcheetah_cem.yaml
 
 
 #### Task6:  Model-Based Policy Optimization (MBPO)
-
-<div style="max-width: 800px;">
 
 In this homework you will also be implementing a variant of MBPO. Another way of leveraging the learned
 model is through generating additional samples to train the policy and value functions. Since RL often
@@ -488,5 +481,5 @@ Results:
 
 <img src="hw4/images/task6.png" width="800px">
 
-############################################################################################################################################
+######################################################################################
 </div>
