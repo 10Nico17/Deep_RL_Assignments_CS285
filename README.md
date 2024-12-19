@@ -435,6 +435,15 @@ shooting (what you have done up to this point) and CEM
 <img src="hw4/images/cem.png" width="800px">
 
 
+The CEM approach optimises the action selection iteratively:
+- Initialise a distribution of possible action sequences.
+- Generate sequences by sampling from this distribution.
+- Evaluate the sequences based on the reward. 
+- Select the best sequences (elites) and update the distribution.
+- Repeat the process until the distribution prioritises the best actions.
+
+At the end, CEM selects the first action of the optimised sequence as the next action to be executed.
+
 <pre style="font-size: 16px; font-weight: bold; width: 800px;">
 python cs285/scripts/run_hw4.py -cfg experiments/mpc/halfcheetah_cem.yaml
 </pre>
@@ -509,5 +518,5 @@ Overview modules:
 
 Results:
 <img src="hw4/images/task6.png" width="800px">
-######################################################################################
+#################################################################################
 </div>
