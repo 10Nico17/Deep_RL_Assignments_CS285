@@ -30,8 +30,9 @@
 
 <img src="hw1/images/dagger.gif" width="800px">
 
-</div>
 ######################################################################################
+</div>
+
 
 ## Homework 2:
 <div style="max-width: 800px;">
@@ -184,8 +185,9 @@ https://www.gymlibrary.dev/environments/mujoco/humanoid/
     tensorboard --logdir=.
 </pre>
 
-</div>
 ######################################################################################
+</div>
+
 
 ## Homework 3:
 <div style="max-width: 800px;">
@@ -316,8 +318,9 @@ python cs285/scripts/run_hw3_sac.py -cfg experiments/sac/sanity_invertedpendulum
 
 python cs285/scripts/run_hw3_sac.py -cfg experiments/sac/sanity_invertedpendulum_reparametrize.yaml
 
-</div>
 ######################################################################################
+</div>
+
 
 ## Homework4:
 <div style="max-width: 800px;">
@@ -357,6 +360,15 @@ model), and repeat.
 <img src="hw4/images/action_selection.png" width="800px">
 
 
+MPC is based on the following core ideas:
+Planning over a Horizon: MPC searches for a sequence of actions over multiple timesteps (the "horizon") to maximize the expected reward. Prediction Model: MPC uses a dynamic model to predict how actions will influence future states and rewards.
+Receding Horizon: Although an entire sequence is planned, only the first action of the best sequence is executed. The process is then repeated for the next timestep.
+
+The "random" strategy is a simple version of MPC because it implements the core principles of MPC, albeit without sophisticated optimization of action sequences:
+Planning over a Horizon: Multiple random action sequences of length TT (horizon) are generated. Each sequence represents a potential plan for future actions. Prediction with a Model: A trained dynamic model is used to predict how each action sequence will affect future states and rewards.
+Evaluation: Each action sequence is evaluated by summing up the rewards for the entire sequence. This corresponds to optimizing the objective in MPC (e.g., maximizing reward or minimizing error).
+Execution: As with MPC, only the first action of the best sequence is executed.
+
 <pre style="font-size: 16px; font-weight: bold; width: 800px;">
 python cs285/scripts/run_hw4.py -cfg experiments/mpc/obstacles_1_iter.yaml
 </pre>
@@ -365,7 +377,7 @@ Average eval return: -25.955617904663086
 
 #### Task3:
 
-MBRL algorithm with on-policy data collection and iterative model training.
+MBRL algorithm with on-policy data collection and iterative model training. On-policy is used, the collected data comes from the currently trained combination of dynamic model and MPC. Although there is no explicitly trained policy as in classical reinforcement learning algorithms, the combination of dynamic model and MPC acts as a ‘policy’ that determines actions and collects data.
 
 <pre style="font-size: 16px; font-weight: bold; width: 800px;">
 python cs285/scripts/run_hw4.py -cfg experiments/mpc/obstacles_multi_iter.yaml
@@ -429,7 +441,6 @@ python cs285/scripts/run_hw4.py -cfg experiments/mpc/halfcheetah_cem.yaml
 
 
 #### Task6:  Model-Based Policy Optimization (MBPO)
-
 In this homework you will also be implementing a variant of MBPO. Another way of leveraging the learned
 model is through generating additional samples to train the policy and value functions. Since RL often
 requires many environment interaction samples, which can be costly, we can use our learned model to generate
@@ -438,16 +449,37 @@ and use the learned model you implemented in the earlier questions for generatin
 our SAC agent
 
 Learn Policy:
+
+Observation Space: Box(-inf, inf, (21,), float64)
+Action Space: Box(-1.0, 1.0, (6,), float32)
+discrete:  False
+
 <img src="hw4/images/SACagent.png" width="800px">
+
+1. The policy network (actor) generates actions based on the current state ss.
+Network structure of the actor:
+Input: The current state ss, which consists of 21 dimensions (in_features=21). 
+Output: The output has 12 dimensions (out_features=12), which represents the parameters of a Gaussian policy:
+6 values for the means of the actions.
+6 values for the standard deviations of the actions
+This means that the actor generates a probability distribution for the actions, and an action is chosen by sampling from this distribution.
+
+2. Critics (Q-value networks) evaluate the quality of state-action pairs (s,a) by calculating the Q-value, which indicates the expected future reward.
+Network structure of the critics:
+There are two Q-value networks (double Q-learning) to avoid overfitting and provide more stable updates. 
+Input: The combination of states s (21 dimensions) and action a (6 dimensions), totalling 27 dimensions (in_features=27).
+Output: A single scalar (out_features=1) giving the Q-value for the given state-action pair (s,a).
+
+3. The Target Critics are copies of the two Q-value networks.
+They are used to perform more stable updates by using the soft target update mechanism.
+θtarget←τ⋅θcritic+(1-τ)⋅θtarget 
+θtarget←τ⋅θcritic+(1-τ)⋅θtarget
 
 <pre style="font-size: 16px; font-weight: bold; width: 800px;">
 python cs285/scripts/run_hw4.py -cfg experiments/mpc/halfcheetah_mbpo.yaml --sac_config_file experiments/sac/halfcheetah_clipq.yaml
 </pre>
 
-
 The different settings (Model-Free SAC, Dyna, MBPO) differ in how and from where the training data originates.
-
-
 
 1. (grey) Model-free SAC baseline: no additional rollouts from the learned model.
 Model-Free SAC Baseline: SAC agent is trained directly on real interactions with the environment.The replay buffer of the SAC agent only contains real observations, actions and rewards. There is no additional use of learnt models
@@ -475,11 +507,7 @@ Again, additional gradient steps are performed per real environment interaction.
 Overview modules:
 <img src="hw4/images/offpolicy.png" width="800px">
 
-
-
 Results:
-
 <img src="hw4/images/task6.png" width="800px">
-
 ######################################################################################
 </div>
