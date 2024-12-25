@@ -226,6 +226,7 @@ https://www.gymlibrary.dev/environments/mujoco/humanoid/
 
 <img src="hw3/images/pacman.png" width="800px">
 
+<img src="hw3/images/pacman.gif" width="800px">
 
 
 #### Continuous Actions with Soft-Actor-Critic:
@@ -374,6 +375,10 @@ python cs285/scripts/run_hw4.py -cfg experiments/mpc/obstacles_1_iter.yaml
 </pre>
 
 Average eval return: -25.955617904663086
+
+
+<img src="hw4/images/task2.gif" width="800px">
+
 
 #### Task3:
 

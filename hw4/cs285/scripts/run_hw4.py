@@ -107,6 +107,8 @@ def run_training_loop(
     env = config["make_env"]()
     eval_env = config["make_env"]()
     render_env = config["make_env"](render=True)
+    #render_env = config["make_env"](render_mode="rgb_array")
+
 
     # Ausgabe der Action- und Observation-Spaces
     print("Observation Space:", env.observation_space)
