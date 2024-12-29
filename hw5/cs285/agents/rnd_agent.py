@@ -12,6 +12,9 @@ def init_network(model):
         model.weight.data.normal_()
         model.bias.data.normal_()
 
+
+
+
 class RNDAgent(DQNAgent):
     def __init__(
         self,
@@ -41,18 +44,23 @@ class RNDAgent(DQNAgent):
             self.rnd_net.parameters()
         )
 
+       
     def update_rnd(self, obs: torch.Tensor) -> torch.Tensor:
         """
-        Update the RND network using the observations.
+        Aktualisiere das RND-Netzwerk basierend auf den Beobachtungen.
         """
-        # TODO(student): update the RND network
-        loss = ...
-
+        with torch.no_grad():
+            target = self.rnd_target_net(obs)
+    
+        prediction = self.rnd_net(obs)
+        loss = nn.functional.mse_loss(prediction, target)
+    
         self.rnd_optimizer.zero_grad()
         loss.backward()
         self.rnd_optimizer.step()
-
+    
         return loss.item()
+    
 
     def update(
         self,
@@ -64,10 +72,14 @@ class RNDAgent(DQNAgent):
         step: int,
     ):
         with torch.no_grad():
-            # TODO(student): Compute RND bonus for batch and modify rewards
-            rnd_error = ...
-            assert rnd_error.shape == rewards.shape
-            rewards = ...
+            # Berechne den RND-Fehler als Bonus
+            rnd_error = torch.norm(
+                self.rnd_net(observations) - self.rnd_target_net(observations), dim=-1
+            )
+            assert rnd_error.shape == rewards.shape, "RND-Fehler muss die gleiche Form wie Belohnungen haben"
+            
+            # Füge den RND-Bonus zur Belohnung hinzu
+            rewards = rewards + self.rnd_weight * rnd_error
 
         metrics = super().update(observations, actions, rewards, next_observations, dones, step)
 

@@ -551,13 +551,29 @@ python cs285/scripts/run_hw5_explore.py -cfg experiments/exploration/pointmass_h
 
 <img src="hw5/images/randomenvexpl.png" width="800px">
 
+### Exploration
 #### Task1: Random Network Distillation (RND) Algorithm
 
-#### Conservative Q-Learning (CQL) Algorithm:
+<pre style="font-size: 16px; font-weight: bold; width: 800px;">
+python cs285/scripts/run_hw5_explore.py -cfg experiments/exploration/pointmass_easy_rnd.yaml --dataset_dir datasets/
+python cs285/scripts/run_hw5_explore.py -cfg experiments/exploration/pointmass_medium_rnd.yaml --dataset_dir datasets/
+python cs285/scripts/run_hw5_explore.py -cfg experiments/exploration/pointmass_hard_rnd.yaml --dataset_dir datasets/
+</pre>
 
+
+<img src="hw5/exploration_visualization/PointmassEasyRND.png" width="800">
+
+<img src="hw5/exploration_visualization/PointmassMediumRND.png" width="800px">
+
+<img src="hw5/exploration_visualization/PointmassHardRND.png" width="800px">
+
+
+
+### Offline Reinforcement Learning
+
+#### Task2: Conservative Q-Learning (CQL) Algorithm
 
 #### Advantage Weighted Actor Critic (AWAC) Algorithm:
-
 
 #### Implicit Q-Learning (IQL) Algorithm:
 

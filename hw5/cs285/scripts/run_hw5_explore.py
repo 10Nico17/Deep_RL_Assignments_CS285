@@ -70,6 +70,9 @@ def run_training_loop(config: dict, logger: Logger, args: argparse.Namespace):
         **config["agent_kwargs"],
     )
 
+    print("agent: ", agent)
+
+
     ep_len = env.spec.max_episode_steps or env.max_episode_steps
 
     observation = None
