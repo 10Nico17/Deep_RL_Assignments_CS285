@@ -1,4 +1,8 @@
-#### Source: https://rail.eecs.berkeley.edu/deeprlcourse/
+#### Source: 
+
+https://rail.eecs.berkeley.edu/deeprlcourse/
+
+https://www.youtube.com/watch?v=SupFHGbytvA&list=PL_iWQOsE6TfVYGEGiAOMaOzzv41Jfm_Ps&index=1&pp=iAQB
 
 ## Homework 1:
 <div style="max-width: 800px;">
@@ -524,4 +528,39 @@ Overview modules:
 Results:
 <img src="hw4/images/task6.png" width="800px">
 #################################################################################
+
+
+## Homework5: Exploration Strategies and Offline Reinforcement Learning
+Implement and evaluate a pipeline for exploration and offline learning. You will
+first implement an exploration method called random network distillation (RND) and collect data using this
+exploration procedure, then perform offline training on the data collected via RND using conservative Q-
+learning (CQL), Advantage Weighted Actor Critic (AWAC), and Implicit Q-Learning (IQL). 
+
+Environments:
+Consider some stochastic dynamics, discrete-action gridworld environments in this assignment.
+
+<img src="hw5/images/envhw5.png" width="800px">
+
+Running a random policy:
+
+<pre style="font-size: 16px; font-weight: bold; width: 800px;">
+python cs285/scripts/run_hw5_explore.py -cfg experiments/exploration/pointmass_easy_random.yaml --dataset_dir datasets/
+python cs285/scripts/run_hw5_explore.py -cfg experiments/exploration/pointmass_medium_random.yaml --dataset_dir datasets/
+python cs285/scripts/run_hw5_explore.py -cfg experiments/exploration/pointmass_hard_random.yaml --dataset_dir datasets/
+</pre>
+
+<img src="hw5/images/randomenvexpl.png" width="800px">
+
+#### Task1: Random Network Distillation (RND) Algorithm
+
+#### Conservative Q-Learning (CQL) Algorithm:
+
+
+#### Advantage Weighted Actor Critic (AWAC) Algorithm:
+
+
+#### Implicit Q-Learning (IQL) Algorithm:
+
+
+
 </div>
