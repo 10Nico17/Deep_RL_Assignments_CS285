@@ -137,7 +137,7 @@ class DQNAgent(nn.Module):
             target_values = reward + (1 - done.float()) * self.discount * next_q_values
 
         # Berechne die Q-Werte für die aktuellen Aktionen
-        qa_values = self.critic(obs)
+        qa_values = self.critic(obs)        
         q_values = qa_values.gather(dim=1, index=action.unsqueeze(dim=1)).squeeze(1)
 
         # Berechne den Verlust

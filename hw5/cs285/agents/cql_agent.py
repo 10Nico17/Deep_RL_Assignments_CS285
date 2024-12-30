@@ -40,8 +40,45 @@ class CQLAgent(DQNAgent):
             done,
         )
 
-        # TODO(student): modify the loss to implement CQL
-        # Hint: `variables` includes qa_values and q_values from your CQL implementation
-        loss = loss + ...
+
+        # Berechne den Standard-DQN-Verlust
+        loss, metrics, variables = super().compute_critic_loss(
+            obs, action, reward, next_obs, done
+        )
+
+        # Extrahiere Q-Werte aus den Variablen
+        qa_values = variables['qa_values']  # Q-Werte für die aktuellen Aktionen
+        q_values = variables['q_values']    # Q-Werte für alle möglichen Aktionen
+
+        #print("q_values shape:", q_values.shape)
+        #print("qa_values shape:", qa_values.shape)
+
+        # Konservativer Q-Learning-Term hinzufügen
+        # LogSumExp für alle Q-Werte (OOD-Aktionen) berechnen
+        random_actions = torch.randint(
+            0, self.num_actions, (obs.shape[0], self.num_actions), device=obs.device
+        )
+        random_q_values = self.critic(obs).gather(1, random_actions)
+
+        #logsumexp_q = torch.logsumexp(q_values / self.cql_temperature, dim=1).mean()
+        logsumexp_q = torch.logsumexp(qa_values / self.cql_temperature, dim=1).mean()
+
+
+
+        dataset_q = qa_values.mean()
+
+        # Konservativer Verlustterm hinzufügen
+        cql_loss = self.cql_alpha * (logsumexp_q - dataset_q)
+
+        # Gesamtverlust berechnen
+        loss = loss + cql_loss
+
+        # Metriken für das Logging
+        metrics.update({
+            "critic_loss/cql_loss": cql_loss.item(),
+            "critic_loss/logsumexp_q": logsumexp_q.item(),
+            "critic_loss/dataset_q": dataset_q.item(),
+        })
 
         return loss, metrics, variables
+
