@@ -38,12 +38,17 @@ def run_training_loop(config: dict, logger: Logger, args: argparse.Namespace):
 
     assert discrete, "DQN only supports discrete action spaces"
 
+
+    print("agents: ", agents[config["agent"]])
+
     agent_cls = agents[config["agent"]]
     agent = agent_cls(
         env.observation_space.shape,
         env.action_space.n,
         **config["agent_kwargs"],
     )
+
+    print("agent: ", agent)
 
     ep_len = env.spec.max_episode_steps or env.max_episode_steps
 

@@ -583,11 +583,9 @@ icy.
 <pre style="font-size: 16px; font-weight: bold; width: 800px;">
 python ./cs285/scripts/run_hw5_offline.py -cfg experiments/offline/pointmass_easy_cql.yaml --dataset_dir datasets
 
+python ./cs285/scripts/run_hw5_offline.py -cfg experiments/offline/pointmass_easy_dqn.yaml --dataset_dir datasets
 
-python ./cs285/scripts/run_hw5_offline.py -cfg experiments/offline/pointmass_easy_cql.yaml --dataset_dir datasets
-
-
-python ./cs285/scripts/run_hw5_offline.py -cfg experiments/offline/pointmass_medium_dqn.yaml --dataset_dir datasets 
+python ./cs285/scripts/run_hw5_offline.py -cfg experiments/offline/pointmass_medium_cql.yaml --dataset_dir datasets 
 
 python ./cs285/scripts/run_hw5_offline.py -cfg experiments/offline/pointmass_medium_dqn.yaml --dataset_dir datasets
 </pre>
@@ -598,18 +596,27 @@ python ./cs285/scripts/run_hw5_offline.py -cfg experiments/offline/pointmass_med
 1. Standard-DQN-Verlust stellt sicher, dass die Q-Funktion die Bellman-Gleichung erfüllt.
 2. Bestrafe hohe Q-Werte für Aktionen, die nicht im Offline-Datensatz vorkommen. Dieser Term erhöht den Verlust, wenn Q-Werte für Out-of-Distribution (OOD) Aktionen hoch sind.
 
-
 logsumexp_q = torch.logsumexp(qa_values / self.cql_temperature, dim=1).mean()
-
 
 3. Belohne Q-Werte für Aktionen, die aus dem Offline-Datensatz stammen. Dieser Term reduziert den Verlust, wenn die Q-Werte für Aktionen aus dem Datensatz hoch sind.
 
 
+<img src="hw5/images/cql_easy.png" width="800px">
+
+<img src="hw5/images/cql_medium.png" width="800px">
+
+Compare Q-Values CQL and DQN:
+
+<img src="hw5/images/compare_q_values.png" width="800px">
+
+<img src="hw5/images/comapre_qvalues2.png" width="800px">
 
 
-#### Advantage Weighted Actor Critic (AWAC) Algorithm:
 
-#### Implicit Q-Learning (IQL) Algorithm:
+#### Task3: Advantage Weighted Actor Critic (AWAC) Algorithm
+
+
+#### Task4: Implicit Q-Learning (IQL) Algorithm:
 
 
 
