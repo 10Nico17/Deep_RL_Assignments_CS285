@@ -623,6 +623,11 @@ python ./cs285/scripts/run_hw5_offline.py -cfg experiments/offline/pointmass_har
 </pre>
 
 
+<img src="hw5/images/awac_medium.png" width="800px">
+
+<img src="hw5/images/awac_hard.png" width="800px">
+
+
 #### Task4: Implicit Q-Learning (IQL) Algorithm:
 
 <pre style="font-size: 16px; font-weight: bold; width: 800px;">
@@ -630,7 +635,5 @@ python ./cs285/scripts/run_hw5_offline.py -cfg experiments/offline/pointmass_med
 </pre>
 
 <img src="hw5/images/iql.png" width="800px">
-
-
 
 </div>
