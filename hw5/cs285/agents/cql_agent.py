@@ -24,6 +24,51 @@ class CQLAgent(DQNAgent):
         self.cql_alpha = cql_alpha
         self.cql_temperature = cql_temperature
 
+
+    """
+
+    def compute_critic_loss(
+        self,
+        obs: torch.Tensor,
+        action: torch.Tensor,
+        reward: torch.Tensor,
+        next_obs: torch.Tensor,
+        done: torch.Tensor,
+    ) -> Tuple[torch.Tensor, dict, dict]:
+
+        # Berechne den Standard-DQN-Verlust
+        loss, metrics, variables = super().compute_critic_loss(
+            obs, action, reward, next_obs, done
+        )
+
+        # Extrahiere die Q-Werte
+        qa_values = variables['qa_values']  # Q-Werte für alle Aktionen im aktuellen Zustand
+        q_values = variables['q_values']    # Q-Werte für die gewählten Aktionen (aktuelle Aktionen)
+
+        # 1. Berechne LogSumExp für alle Aktionen (qa_values)
+        logsumexp_q = torch.logsumexp(qa_values / self.cql_temperature, dim=1).mean()
+
+        # 2. Berechne den durchschnittlichen Q-Wert für die gewählten Aktionen
+        dataset_q = q_values.mean()
+
+        # 3. CQL-Regularisierer
+        cql_loss = self.cql_alpha * (logsumexp_q - dataset_q)
+
+        # 4. Gesamtverlust berechnen
+        loss = loss + cql_loss
+
+        # Logging-Metriken
+        metrics.update({
+            "critic_loss/cql_loss": cql_loss.item(),
+            "critic_loss/logsumexp_q": logsumexp_q.item(),
+            "critic_loss/dataset_q": dataset_q.item(),
+        })
+
+        return loss, metrics, variables
+
+
+    """
+
     def compute_critic_loss(
         self,
         obs: torch.Tensor,
@@ -81,4 +126,5 @@ class CQLAgent(DQNAgent):
         })
 
         return loss, metrics, variables
+    
 

@@ -31,14 +31,25 @@ class IQLAgent(AWACAgent):
         )
         self.expectile = expectile
 
+
     def compute_advantage(
         self,
         observations: torch.Tensor,
         actions: torch.Tensor,
         action_dist: Optional[torch.distributions.Categorical] = None,
     ):
-        # TODO(student): Compute advantage with IQL
-        return ...
+        # Q-Werte für die Aktionen berechnen
+        qa_values = self.critic(observations).gather(1, actions.unsqueeze(1)).squeeze(1)
+
+        # V-Werte berechnen
+        v_values = self.value_critic(observations).squeeze(1)
+
+        # Advantage berechnen
+        advantages = qa_values - v_values
+
+        return advantages
+
+
 
     def update_q(
         self,
@@ -49,10 +60,17 @@ class IQLAgent(AWACAgent):
         dones: torch.Tensor,
     ) -> dict:
         """
-        Update Q(s, a)
+        Aktualisiert die Q-Funktion mit Bellman-Backup.
         """
-        # TODO(student): Update Q(s, a) to match targets (based on V)
-        loss = ...
+        with torch.no_grad():
+            next_v_values = self.target_value_critic(next_observations).squeeze(1)
+            target_q_values = rewards + (1 - dones.float()) * self.discount * next_v_values
+
+        # Q-Werte für aktuelle Aktionen berechnen
+        qa_values = self.critic(observations).gather(1, actions.unsqueeze(1)).squeeze(1)
+
+        # Verlust berechnen
+        loss = self.critic_loss(qa_values, target_q_values)
 
         self.critic_optimizer.zero_grad()
         loss.backward()
@@ -62,23 +80,28 @@ class IQLAgent(AWACAgent):
         self.critic_optimizer.step()
 
         metrics = {
-            "q_loss": self.critic_loss(q_values, target_values).item(),
-            "q_values": q_values.mean().item(),
-            "target_values": target_values.mean().item(),
+            "q_loss": loss.item(),
+            "q_values": qa_values.mean().item(),
+            "target_values": target_q_values.mean().item(),
             "q_grad_norm": grad_norm.item(),
         }
 
         return metrics
+
 
     @staticmethod
     def iql_expectile_loss(
         expectile: float, vs: torch.Tensor, target_qs: torch.Tensor
     ) -> torch.Tensor:
         """
-        Compute the expectile loss for IQL
+        Berechnet die Expectile-Loss-Funktion.
         """
-        # TODO(student): Compute the expectile loss
-        return ...
+        errors = target_qs - vs
+        weights = torch.where(errors > 0, expectile, (1 - expectile))
+        loss = (weights * (errors ** 2)).mean()
+        return loss
+
+
 
     def update_v(
         self,
@@ -86,12 +109,16 @@ class IQLAgent(AWACAgent):
         actions: torch.Tensor,
     ):
         """
-        Update the value network V(s) using targets Q(s, a)
+        Aktualisiert die Value-Funktion V(s) basierend auf Q(s, a).
         """
-        # TODO(student): Compute target values for V(s)
+        # Q-Werte für Aktionen berechnen
+        qa_values = self.critic(observations).gather(1, actions.unsqueeze(1)).squeeze(1)
 
-        # TODO(student): Update V(s) using the loss from the IQL paper
-        loss = ...
+        # V-Werte berechnen
+        v_values = self.value_critic(observations).squeeze(1)
+
+        # Expectile-Loss berechnen
+        loss = self.iql_expectile_loss(self.expectile, v_values, qa_values)
 
         self.value_critic_optimizer.zero_grad()
         loss.backward()
@@ -102,11 +129,12 @@ class IQLAgent(AWACAgent):
 
         return {
             "v_loss": loss.item(),
-            "vs_adv": (vs - target_values).mean().item(),
-            "vs": vs.mean().item(),
-            "target_values": target_values.mean().item(),
+            "vs_adv": (qa_values - v_values).mean().item(),
+            "vs": v_values.mean().item(),
+            "target_values": qa_values.mean().item(),
             "v_grad_norm": grad_norm.item(),
         }
+
 
     def update_critic(
         self,

@@ -595,9 +595,6 @@ python ./cs285/scripts/run_hw5_offline.py -cfg experiments/offline/pointmass_med
 
 1. Standard-DQN-Verlust stellt sicher, dass die Q-Funktion die Bellman-Gleichung erfüllt.
 2. Bestrafe hohe Q-Werte für Aktionen, die nicht im Offline-Datensatz vorkommen. Dieser Term erhöht den Verlust, wenn Q-Werte für Out-of-Distribution (OOD) Aktionen hoch sind.
-
-logsumexp_q = torch.logsumexp(qa_values / self.cql_temperature, dim=1).mean()
-
 3. Belohne Q-Werte für Aktionen, die aus dem Offline-Datensatz stammen. Dieser Term reduziert den Verlust, wenn die Q-Werte für Aktionen aus dem Datensatz hoch sind.
 
 
@@ -615,8 +612,24 @@ Compare Q-Values CQL and DQN:
 
 #### Task3: Advantage Weighted Actor Critic (AWAC) Algorithm
 
+This augments the training of the policy by utilizing the following actor update:
+
+<img src="hw5/images/AWAC.png" width="800px">
+
+AWAC learns an in-distribution policy directly by performing weighted behavior cloning on the dataset.
+
+<pre style="font-size: 16px; font-weight: bold; width: 800px;">
+python ./cs285/scripts/run_hw5_offline.py -cfg experiments/offline/pointmass_hard_awac.yaml --dataset_dir datasets
+</pre>
+
 
 #### Task4: Implicit Q-Learning (IQL) Algorithm:
+
+<pre style="font-size: 16px; font-weight: bold; width: 800px;">
+python ./cs285/scripts/run_hw5_offline.py -cfg experiments/offline/pointmass_medium_iql.yaml --dataset_dir datasets
+</pre>
+
+<img src="hw5/images/iql.png" width="800px">
 
 
 
