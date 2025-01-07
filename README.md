@@ -556,7 +556,9 @@ python cs285/scripts/run_hw5_explore.py -cfg experiments/exploration/pointmass_h
 
 <pre style="font-size: 16px; font-weight: bold; width: 800px;">
 python cs285/scripts/run_hw5_explore.py -cfg experiments/exploration/pointmass_easy_rnd.yaml --dataset_dir datasets/
+
 python cs285/scripts/run_hw5_explore.py -cfg experiments/exploration/pointmass_medium_rnd.yaml --dataset_dir datasets/
+
 python cs285/scripts/run_hw5_explore.py -cfg experiments/exploration/pointmass_hard_rnd.yaml --dataset_dir datasets/
 </pre>
 
@@ -635,5 +637,15 @@ python ./cs285/scripts/run_hw5_offline.py -cfg experiments/offline/pointmass_med
 </pre>
 
 <img src="hw5/images/iql.png" width="800px">
+
+
+#### Task5: Online Finetuning:
+
+
+<pre style="font-size: 16px; font-weight: bold; width: 800px;">
+python ./cs285/scripts/run_hw5_finetune.py -cfg experiments/finetuning/pointmass_hard_cql_finetune.yaml --dataset_dir datasets
+</pre>
+
+
 
 </div>

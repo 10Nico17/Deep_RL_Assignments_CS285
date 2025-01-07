@@ -58,9 +58,38 @@ def run_training_loop(config: dict, logger: Logger, args: argparse.Namespace):
     num_offline_steps = config["offline_steps"]
     num_online_steps = config["total_steps"] - num_offline_steps
 
+
+    with open(os.path.join(args.dataset_dir, f"{config['dataset_name']}.pkl"), "rb") as f:
+        dataset = pickle.load(f)
+
     for step in tqdm.trange(config["total_steps"], dynamic_ncols=True):
         # TODO(student): Borrow code from another online training script here. Only run the online training loop after `num_offline_steps` steps.
 
+        if step < num_offline_steps:
+            # Offline Training Loop
+            # Beobachtungen aus dem Replay-Puffer entnehmen
+            batch = dataset.sample(config["batch_size"])   
+            batch = {
+            k: ptu.from_numpy(v) if isinstance(v, np.ndarray) else v for k, v in batch.items()
+             }
+
+            # Agenten-Update basierend auf Offline-Daten
+            update_info = agent.update(
+                batch["observations"],
+                batch["actions"],
+                batch["rewards"] * (1 if config.get("use_reward", False) else 0),
+                batch["next_observations"],
+                batch["dones"],
+                step,
+            )
+
+
+
+
+
+
+
+        """
         # Main training loop
         batch = replay_buffer.sample(config["batch_size"])
 
@@ -75,10 +104,14 @@ def run_training_loop(config: dict, logger: Logger, args: argparse.Namespace):
             batch["dones"],
             step,
         )
+        """
 
+
+        """
         # Logging code
         if epsilon is not None:
             update_info["epsilon"] = epsilon
+        """
 
         if step % args.log_interval == 0:
             for k, v in update_info.items():
@@ -107,6 +140,9 @@ def run_training_loop(config: dict, logger: Logger, args: argparse.Namespace):
                 logger.log_scalar(np.max(ep_lens), "eval/ep_len_max", step)
                 logger.log_scalar(np.min(ep_lens), "eval/ep_len_min", step)
 
+        
+        
+        """
         if step % args.visualize_interval == 0:
             env_pointmass: Pointmass = env.unwrapped
             observations = np.stack(recent_observations)
@@ -117,13 +153,21 @@ def run_training_loop(config: dict, logger: Logger, args: argparse.Namespace):
                 step,
                 "eval",
             )
+        """
+    
 
+
+
+
+    """
     # Save the final dataset
     dataset_file = os.path.join(args.dataset_dir, f"{config['dataset_name']}.pkl")
     with open(dataset_file, "wb") as f:
         pickle.dump(replay_buffer, f)
         print("Saved dataset to", dataset_file)
+    """
 
+    
     # Render final heatmap
     fig = visualize(
         env_pointmass, agent, replay_buffer.observations[: config["total_steps"]]
@@ -132,6 +176,10 @@ def run_training_loop(config: dict, logger: Logger, args: argparse.Namespace):
     filename = os.path.join("exploration", f"{config['log_name']}.png")
     fig.savefig(filename)
     print("Saved final heatmap to", filename)
+    
+
+
+
 
 
 banner = """
